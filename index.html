@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -89,30 +89,30 @@
 </header>
 <main>
   <div class="intro">
-    <span class="cmd">&gt;&gt;</span> ДВИЖОК: MediaPipe Face Mesh — 468 ТОЧЕК ЛИЦА.<br>
-    <span class="cmd">&gt;&gt;</span> ОДНО ФОТО = ОДИН ДЕТЕРМИНИРОВАННЫЙ РЕЙТ. НОЛЬ РАНДОМА.<br>
-    <span class="cmd">&gt;&gt;</span> ДОЖДИСЬ СТАТУСА <span class="on">ONLINE</span>.<span class="bk">_</span>
+    <span class="cmd">&gt;&gt;</span> ENGINE: MediaPipe Face Mesh — 468 FACE LANDMARKS.<br>
+    <span class="cmd">&gt;&gt;</span> ONE PHOTO = ONE DETERMINED RATING. ZERO RANDOMNESS.<br>
+    <span class="cmd">&gt;&gt;</span> WAIT FOR <span class="on">ONLINE</span> STATUS.<span class="bk">_</span>
   </div>
 
   <div id="up-sec">
-    <h2>// ЗАГРУЗКА ОБРАЗЦА</h2>
+    <h2>// UPLOAD SAMPLE</h2>
     <div class="drop" id="drop">
       <input type="file" id="fi" accept="image/*">
       <span class="di">◉</span>
       <div class="dl" id="dl">
-        <strong id="dt">ОЖИДАНИЕ ДВИЖКА...</strong><br>
-        статус в правом верхнем углу<br><br>
+        <strong id="dt">WAITING FOR ENGINE...</strong><br>
+        status in top right corner<br><br>
         <span style="color:#1e1e1e">JPG / PNG / WEBP</span>
       </div>
     </div>
     <div class="note">
-      <strong>// ДВИЖОК:</strong> MediaPipe Face Mesh (Google) — 468 точек лица, работает в браузере.<br>
-      Симметрия, jawline, canthal tilt — чистая математика. Одно фото = один результат.
+      <strong>// ENGINE:</strong> MediaPipe Face Mesh (Google) — 468 face landmarks, runs in browser.<br>
+      Symmetry, jawline, canthal tilt — pure math. One photo = one result.
     </div>
   </div>
 
   <div id="prev-sec">
-    <h2>// ОБРАЗЕЦ ПОЛУЧЕН</h2>
+    <h2>// SAMPLE RECEIVED</h2>
     <div class="cw">
       <img id="img" src="" alt="">
       <canvas id="ov"></canvas>
@@ -120,23 +120,23 @@
       <div class="cn bl"></div><div class="cn br"></div>
     </div>
     <div class="eb" id="eb"></div>
-    <button id="btn">▶ ЗАПУСТИТЬ АНАЛИЗ</button>
+    <button id="btn">▶ RUN ANALYSIS</button>
   </div>
 
   <div id="load-sec">
-    <h2>// АНАЛИЗ ЛИЦА...</h2>
+    <h2>// ANALYZING FACE...</h2>
     <div class="tlog" id="tlog"></div>
     <div class="pb-w"><div class="pb" id="pb"></div></div>
   </div>
 
   <div id="res-sec">
-    <h2>// ВЕРДИКТ ВЫНЕСЕН</h2>
+    <h2>// VERDICT REACHED</h2>
     <div class="dh">
       <div class="dt">
         <strong>ID:</strong> <span id="rid"></span><br>
-        <strong>ДАТА:</strong> <span id="rd"></span><br>
-        <strong>ДВИЖОК:</strong> MEDIAPIPE FACE MESH<br>
-        <strong>СТАТУС:</strong> <span style="color:var(--red)">CLASSIFIED</span>
+        <strong>DATE:</strong> <span id="rd"></span><br>
+        <strong>ENGINE:</strong> MEDIAPIPE FACE MESH<br>
+        <strong>STATUS:</strong> <span style="color:var(--red)">CLASSIFIED</span>
       </div>
       <div class="sd">
         <div><span class="sn" id="sn">0.0</span><span class="ss"> /10</span></div>
@@ -145,13 +145,13 @@
     </div>
     <div class="mg" id="mg"></div>
     <div class="vb">
-      <h3>// ПРЯМОЙ ВЕРДИКТ</h3>
+      <h3>// DIRECT VERDICT</h3>
       <div class="vt" id="vt"></div>
     </div>
     <div class="vb">
-      <h3>// LOOKSMAX ПРОТОКОЛ</h3>
+      <h3>// LOOKSMAX PROTOCOL</h3>
       <div class="vt">
-        <span style="color:#333">Приоритеты на основе слабых метрик:</span>
+        <span style="color:#333">Priorities based on weak metrics:</span>
         <ul class="ll" id="ll"></ul>
       </div>
       <div class="pw">
@@ -160,7 +160,7 @@
         <div class="pn" id="pn">+0.0</div>
       </div>
     </div>
-    <button class="rb" id="rb">[ НОВЫЙ АНАЛИЗ ]</button>
+    <button class="rb" id="rb">[ NEW ANALYSIS ]</button>
   </div>
 </main>
 <footer>LOOKSCORE TERMINAL // MEDIAPIPE ENGINE // COPE IS NOT AN OPTION</footer>
@@ -200,8 +200,8 @@ async function initMediaPipe(){
     await faceMesh.initialize();
     ready=true;
     st.textContent='ONLINE'; st.className='on';
-    $('dt').textContent='ПЕРЕТАЩИ ФОТО / НАЖМИ';
-    $('dl').innerHTML='<strong style="color:var(--red);font-size:.95rem;letter-spacing:2px">ПЕРЕТАЩИ ФОТО / НАЖМИ</strong><br>фронтальное фото, хорошее освещение<br>без фильтров и очков<br><br><span style="color:#1e1e1e">JPG / PNG / WEBP</span>';
+    $('dt').textContent='DRAG PHOTO / CLICK';
+    $('dl').innerHTML='<strong style="color:var(--red);font-size:.95rem;letter-spacing:2px">DRAG PHOTO / CLICK</strong><br>front-facing photo, good lighting<br>no filters or glasses<br><br><span style="color:#1e1e1e">JPG / PNG / WEBP</span>';
   }catch(e){
     st.textContent='ERR: '+e.message.slice(0,30);
     st.className='er';
@@ -348,7 +348,7 @@ drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('drag'
 $('fi').addEventListener('change',e=>{if(e.target.files[0])handleFile(e.target.files[0]);});
 
 function handleFile(file){
-  if(!ready){alert('Подожди — дождись статуса ONLINE.');return;}
+  if(!ready){alert('Wait for ONLINE status.');return;}
   const r=new FileReader();
   r.onload=ev=>{
     $('img').src=ev.target.result;
@@ -378,23 +378,23 @@ async function runAnalysis(){
     await sleep(50);
   }
 
-  log('> MEDIAPIPE FACE MESH АКТИВИРОВАН.','w'); setP(12); await sleep(60);
-  log('> ОТПРАВКА КАДРА В ДВИЖОК...','w'); setP(22);
+  log('> MEDIAPIPE FACE MESH ACTIVATED.','w'); setP(12); await sleep(60);
+  log('> SENDING FRAME TO ENGINE...','w'); setP(22);
 
   let results;
   try{
     results=await detectFace(imgEl);
   }catch(e){
-    return fail('Движок упал: '+e.message+'\nПопробуй перезагрузить страницу.');
+    return fail('Engine crashed: '+e.message+'\nTry refreshing the page.');
   }
 
   if(!results.multiFaceLandmarks||results.multiFaceLandmarks.length===0){
-    return fail('Лицо не обнаружено.\n\nТребования:\n— чёткое фронтальное фото\n— лицо занимает >40% кадра\n— хорошее освещение, без теней\n— без очков и маски');
+    return fail('Face not detected.\n\nRequirements:\n— clear front-facing photo\n— face takes up >40% of frame\n— good lighting, no shadows\n— no glasses or mask');
   }
 
   const lm=results.multiFaceLandmarks[0]; // 468 normalized landmarks
   setP(50);
-  log(`> ЛИЦО НАЙДЕНО ✓  (${lm.length} ТОЧЕК).`,'g'); await sleep(60);
+  log(`> FACE FOUND ✓  (${lm.length} LANDMARKS).`,'g'); await sleep(60);
 
   // Draw landmarks on canvas
   const canvas=$('ov');
@@ -418,19 +418,19 @@ async function runAnalysis(){
   JAW.forEach((i,n)=>{const p=lm[i];n===0?ctx.moveTo(p.x*W,p.y*H):ctx.lineTo(p.x*W,p.y*H);});
   ctx.stroke();
 
-  log('> ВЫЧИСЛЕНИЕ СИММЕТРИИ (8 пар точек)...','w'); setP(60); await sleep(60);
-  log('> АНАЛИЗ CANTHAL TILT...','w');   setP(68); await sleep(60);
+  log('> COMPUTING SYMMETRY (8 point pairs)...','w'); setP(60); await sleep(60);
+  log('> ANALYZING CANTHAL TILT...','w');   setP(68); await sleep(60);
   log('> JAWLINE DEFINITION...','w');   setP(75); await sleep(60);
   log('> CHEEKBONE RATIO...','w');      setP(81); await sleep(60);
-  log('> ПРОПОРЦИИ ЛИЦА (THIRDS)...','w'); setP(87); await sleep(60);
-  log('> КОМПИЛЯЦИЯ СЧЁТА...','w');    setP(94); await sleep(80);
+  log('> FACIAL PROPORTIONS (THIRDS)...','w'); setP(87); await sleep(60);
+  log('> COMPILING SCORE...','w');    setP(94); await sleep(80);
 
   const result=computeMetrics(lm);
   const verdict=buildVerdict(result.score,result.metrics,result.raw);
   const tips=buildTips(result.raw);
 
   setP(100);
-  log('✓ АНАЛИЗ ЗАВЕРШЁН. ВЕРДИКТ ГОТОВ.','r');
+  log('✓ ANALYSIS COMPLETE. VERDICT READY.','r');
   await sleep(500);
   $('load-sec').style.display='none';
   renderResults(result,verdict,tips);
@@ -439,34 +439,34 @@ async function runAnalysis(){
 function fail(msg){
   $('load-sec').style.display='none';
   $('prev-sec').style.display='block';
-  $('eb').textContent='// ОШИБКА: '+msg;
+  $('eb').textContent='// ERROR: '+msg;
   $('eb').style.display='block';
 }
 
 // ── Verdict ───────────────────────────────────────────────────────
 function buildVerdict(score,m,raw){
-  const NM={jaw:'jawline',chk:'скулы',eye:'глазной регион',sym:'симметрия',thirds:'пропорции'};
+  const NM={jaw:'jawline',chk:'cheekbones',eye:'eye region',sym:'symmetry',thirds:'proportions'};
   const ranked=Object.entries({jaw:raw.jaw,chk:raw.chk,eye:raw.eye,sym:raw.sym,thirds:raw.thirds}).sort((a,b)=>a[1]-b[1]);
   const wL=ranked.slice(0,2).map(([k])=>NM[k]);
   const sL=NM[ranked[ranked.length-1][0]];
-  const ct={POSITIVE:'Canthal tilt положительный — взгляд доминирующий, hunter-тип.',NEUTRAL:'Canthal tilt нейтральный — взгляд не выделяется.',NEGATIVE:'Canthal tilt негативный — взгляд пассивный, prey-тип.'}[m.canthal_tilt];
-  if(score<4.5)return`Слабая костная база. Главные проблемы: <strong>${wL.join(' и ')}</strong>. ${ct} SMV в нижней зоне. Без looksmaxxing'а не изменится.`;
-  if(score<5.5)return`Ниже среднего. Плюс — <strong>${sL}</strong>. Минус — <strong>${wL.join(' и ')}</strong>. ${ct} Зона "невидимки" — не отталкиваешь, но и не привлекаешь.`;
-  if(score<6.5)return`Средний уровень SMV. <strong>${sL}</strong> — реальный плюс. Слабые: <strong>${wL.join(' и ')}</strong>. ${ct} Стартовая точка, не финал.`;
-  if(score<7.5)return`Выше среднего. <strong>${sL}</strong> работает на тебя. <strong>${wL[0]}</strong> тянет вниз. ${ct} Топ-25%. Тело и стиль добивают до элиты.`;
-  if(score<8.5)return`Сильная внешность. <strong>${sL}</strong> на высоком уровне. ${ct} Топ-10% по лицевым метрикам.`;
-  return`Элитная внешность. <strong>${sL}</strong> — уровень верхнего процента. ${ct} Максируй тело под уровень лица.`;
+  const ct={POSITIVE:'Positive canthal tilt — dominant gaze, hunter type.',NEUTRAL:'Neutral canthal tilt — gaze unremarkable.',NEGATIVE:'Negative canthal tilt — passive gaze, prey type.'}[m.canthal_tilt];
+  if(score<4.5)return`Weak bone structure. Main issues: <strong>${wL.join(' and ')}</strong>. ${ct} SMV in the lower zone. Won't change without looksmaxxing.`;
+  if(score<5.5)return`Below average. Plus — <strong>${sL}</strong>. Minus — <strong>${wL.join(' and ')}</strong>. ${ct} "Invisible" zone — not off-putting but not attractive either.`;
+  if(score<6.5)return`Average SMV level. <strong>${sL}</strong> is a real plus. Weaknesses: <strong>${wL.join(' and ')}</strong>. ${ct} Starting point, not the finish.`;
+  if(score<7.5)return`Above average. <strong>${sL}</strong> works for you. <strong>${wL[0]}</strong> holds you back. ${ct} Top 25%. Body and style push you to elite.`;
+  if(score<8.5)return`Strong looks. <strong>${sL}</strong> at a high level. ${ct} Top 10% in facial metrics.`;
+  return`Elite looks. <strong>${sL}</strong> — upper percentile level. Maximize your body to match your face.`;
 }
 
 // ── Tips ──────────────────────────────────────────────────────────
 const TIPS={
-  jaw:['<strong>BODYFAT ↓</strong> — жир на лице убивает jawline. Сушка — первый приоритет.','<strong>MEWING</strong> — правильное положение языка формирует нёбо долгосрочно.','<strong>BEARD</strong> — борода закрывает слабый подбородок.','<strong>NECK/TRAPS</strong> — мощная шея делает jawline резче.'],
-  chk:['<strong>BODYFAT ↓</strong> — скулы появляются только при сушке.','<strong>ЗАГАР</strong> — выявляет рельеф скул.','<strong>MEWING</strong> — долгосрочно влияет на скуловую структуру.'],
-  eye:['<strong>БРОВИ</strong> — правильная форма усиливает орбитальный регион.','<strong>СОН 8ч+</strong> — убирает отёчность, взгляд острее.','<strong>BODYFAT ↓</strong> — жир вокруг глаз = prey-взгляд.'],
-  sym:['<strong>ЖЕВАНИЕ ДВУХ СТОРОН</strong> — равномерная нагрузка на мышцы.','<strong>СОН НА СПИНЕ</strong> — сон на боку деформирует лицо.','<strong>ОСАНКА</strong> — кривая осанка создаёт асимметрию.'],
-  thirds:['<strong>ORTHODONTICS</strong> — прикус смещает пропорции.','<strong>MEWING</strong> — влияет на средний третий долгосрочно.'],
-  nose:['<strong>РИНОПЛАСТИКА</strong> — единственный способ изменить нос.','<strong>ВИЗУАЛЬНЫЙ ПРИЁМ</strong> — брови и стрижка отвлекают от носа.'],
-  lips:['<strong>ГИДРАЦИЯ</strong> — обезвоженные губы выглядят тоньше.','<strong>BODYFAT ↓</strong> — высокий % жира размывает форму губ.'],
+  jaw:['<strong>BODYFAT ↓</strong> — face fat kills jawline. Cutting is priority #1.','<strong>MEWING</strong> — proper tongue posture shapes the palate long-term.','<strong>BEARD</strong> — beard covers a weak chin.','<strong>NECK/TRAPS</strong> — a thick neck makes jawline look sharper.'],
+  chk:['<strong>BODYFAT ↓</strong> — cheekbones only show when you are lean.','<strong>TAN</strong> — reveals cheekbone structure.','<strong>MEWING</strong> — long-term effect on cheekbone structure.'],
+  eye:['<strong>BROWS</strong> — proper shape strengthens the orbital region.','<strong>SLEEP 8h+</strong> — removes puffiness, sharper gaze.','<strong>BODYFAT ↓</strong> — fat around eyes = prey gaze.'],
+  sym:['<strong>CHEW BOTH SIDES</strong> — even muscle load.','<strong>SLEEP ON BACK</strong> — side sleeping deforms the face.','<strong>POSTURE</strong> — bad posture creates asymmetry.'],
+  thirds:['<strong>ORTHODONTICS</strong> — bite shifts proportions.','<strong>MEWING</strong> — affects the middle third long-term.'],
+  nose:['<strong>RHINOPLASTY</strong> — the only way to change the nose.','<strong>VISUAL TRICK</strong> — brows and haircut distract from the nose.'],
+  lips:['<strong>HYDRATION</strong> — dehydrated lips look thinner.','<strong>BODYFAT ↓</strong> — high body fat blurs lip shape.'],
 };
 function buildTips(raw){
   const order=Object.entries({jaw:raw.jaw,chk:raw.chk,eye:raw.eye,sym:raw.sym,thirds:raw.thirds,nose:raw.nose,lips:raw.lips}).sort((a,b)=>a[1]-b[1]);
@@ -475,7 +475,7 @@ function buildTips(raw){
   return res;
 }
 
-const getTier=s=>s<4?{l:'СУБЧЕЛОВЕК',c:'#7b1e14'}:s<5?{l:'НИЖЕ СРЕДНЕГО',c:'#c0392b'}:s<6?{l:'СРЕДНЯЧОК',c:'#e67e22'}:s<7?{l:'ВЫШЕ СРЕДНЕГО',c:'#f1c40f'}:s<8?{l:'HIGH TIER',c:'#27ae60'}:s<9?{l:'CHAD',c:'#00ff41'}:{l:'GIGACHAD',c:'#00ff41'};
+const getTier=s=>s<4?{l:'SUBHUMAN',c:'#7b1e14'}:s<5?{l:'BELOW AVERAGE',c:'#c0392b'}:s<6?{l:'AVERAGE',c:'#e67e22'}:s<7?{l:'ABOVE AVERAGE',c:'#f1c40f'}:s<8?{l:'HIGH TIER',c:'#27ae60'}:s<9?{l:'CHAD',c:'#00ff41'}:{l:'GIGACHAD',c:'#00ff41'};
 
 // ── Render ────────────────────────────────────────────────────────
 function renderResults(result,verdict,tips){
@@ -490,10 +490,10 @@ function renderResults(result,verdict,tips){
   $('tb').textContent=l;$('tb').style.color=$('tb').style.borderColor=c;
 
   const DEFS=[
-    {lb:'СИММЕТРИЯ',k:'symmetry',u:'%'},{lb:'CANTHAL TILT',k:'canthal_tilt',tx:1},
-    {lb:'JAWLINE',k:'jawline',u:'%'},{lb:'СКУЛЫ',k:'cheekbones',u:'%'},
-    {lb:'ГЛАЗНОЙ РЕГИОН',k:'eye_region',u:'%'},{lb:'ПРОПОРЦИИ ЛИЦА',k:'facial_thirds',u:'%'},
-    {lb:'НОС',k:'nose',u:'%'},{lb:'ГУБЫ',k:'lips',u:'%'},
+    {lb:'SYMMETRY',k:'symmetry',u:'%'},{lb:'CANTHAL TILT',k:'canthal_tilt',tx:1},
+    {lb:'JAWLINE',k:'jawline',u:'%'},{lb:'CHEEKBONES',k:'cheekbones',u:'%'},
+    {lb:'EYE REGION',k:'eye_region',u:'%'},{lb:'FACIAL PROPORTIONS',k:'facial_thirds',u:'%'},
+    {lb:'NOSE',k:'nose',u:'%'},{lb:'LIPS',k:'lips',u:'%'},
   ];
   const grid=$('mg');grid.innerHTML='';
   DEFS.forEach(d=>{
@@ -523,7 +523,7 @@ $('rb').addEventListener('click',()=>{
 // ── Boot ──────────────────────────────────────────────────────────
 window.addEventListener('load',()=>{
   if(typeof FaceMesh==='undefined'){
-    $('st').textContent='SCRIPT ERR — обнови страницу';
+    $('st').textContent='SCRIPT ERR — refresh the page';
     return;
   }
   initMediaPipe();

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LOOKSCORE TERMINAL v5.0</title>
+<title>LOOKSCORE TERMINAL v5.1</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&display=swap');
   :root{--red:#c0392b;--rdim:#7b1e14;--green:#00ff41;--bg:#080808;--sf:#0f0f0f;--wh:#f0f0f0;--tx:#d0d0d0;--cyan:#00e5ff;}
@@ -47,16 +47,27 @@
 
   /* ── LANDMARK MAP SECTION ─────────────────────────── */
   #lm-sec{display:none;margin-top:36px;}
-  .lm-wrap{position:relative;width:100%;background:var(--sf);border:1px solid #1e1e1e;border-top:1px solid var(--rdim);overflow:hidden;}
+  .lm-layout{display:grid;grid-template-columns:1fr 200px;gap:0;border:1px solid #1e1e1e;border-top:1px solid var(--rdim);background:var(--sf);}
+  .lm-wrap{position:relative;overflow:hidden;}
   #lm-img{width:100%;display:block;}
   #lm-canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
-  .lm-dot{position:absolute;width:18px;height:18px;border-radius:50%;background:var(--red);border:2px solid #fff;transform:translate(-50%,-50%);cursor:grab;z-index:10;transition:box-shadow .15s;}
-  .lm-dot:hover,.lm-dot.active{box-shadow:0 0 12px var(--cyan),0 0 4px #fff;cursor:grab;}
-  .lm-dot.dragging{cursor:grabbing;box-shadow:0 0 16px var(--cyan),0 0 6px #fff;}
-  .lm-dot.corrected{background:var(--cyan);}
-  .lm-label{position:absolute;font-size:.55rem;color:var(--cyan);white-space:nowrap;pointer-events:none;transform:translate(10px,-50%);z-index:9;letter-spacing:1px;text-shadow:0 0 4px rgba(0,229,255,.5);}
-  .lm-label.left-side{transform:translate(-100%,-50%);text-align:right;padding-right:10px;}
-  .lm-hint{font-size:.68rem;color:#444;margin-top:10px;line-height:2;text-align:center;}
+  .lm-dot{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--red);border:1.5px solid rgba(255,255,255,.7);transform:translate(-50%,-50%);cursor:grab;z-index:10;transition:box-shadow .15s,transform .15s;}
+  .lm-dot:hover{box-shadow:0 0 10px var(--cyan);transform:translate(-50%,-50%) scale(1.8);z-index:20;}
+  .lm-dot.dragging{cursor:grabbing;box-shadow:0 0 14px var(--cyan);transform:translate(-50%,-50%) scale(2);z-index:20;}
+  .lm-dot.corrected{background:var(--cyan);border-color:#fff;}
+  .lm-tooltip{position:absolute;font-size:.5rem;color:#fff;background:rgba(0,229,255,.85);padding:2px 6px;border-radius:2px;white-space:nowrap;pointer-events:none;transform:translate(8px,-50%);z-index:25;display:none;letter-spacing:.5px;}
+  .lm-dot:hover .lm-tooltip{display:block;}
+  .lm-side{background:#0a0a0a;border-left:1px solid #1a1a1a;padding:12px;max-height:100%;overflow-y:auto;}
+  .lm-side-title{font-family:'Bebas Neue',sans-serif;font-size:.75rem;letter-spacing:2px;color:var(--cyan);margin-bottom:8px;border-bottom:1px solid #1a1a1a;padding-bottom:6px;}
+  .lm-legend{list-style:none;}
+  .lm-legend li{font-size:.55rem;color:#555;padding:3px 0;display:flex;align-items:center;gap:6px;line-height:1.4;border-bottom:1px solid #0f0f0f;}
+  .lm-legend li .dot-indicator{width:6px;height:6px;border-radius:50%;background:var(--red);flex-shrink:0;}
+  .lm-legend li.corrected .dot-indicator{background:var(--cyan);}
+  .lm-legend li.corrected{color:var(--cyan);}
+  .lm-side-stats{margin-top:10px;border-top:1px solid #1a1a1a;padding-top:8px;}
+  .lm-side-stats div{font-size:.55rem;color:#444;line-height:1.8;}
+  .lm-side-stats strong{color:var(--wh);}
+  .lm-hint{font-size:.65rem;color:#444;margin-top:10px;line-height:1.8;text-align:center;padding:0 20px;}
   .lm-hint strong{color:var(--red);}
   .lm-hint .cyan{color:var(--cyan);}
   .lm-btns{display:flex;gap:10px;margin-top:14px;}
@@ -67,6 +78,7 @@
   #skip-lm-btn:hover{border-color:#444;color:#666;}
   #reset-dots-btn{color:var(--red);border-color:#331010;}
   #reset-dots-btn:hover{background:var(--red);color:#000;}
+  @media(max-width:640px){.lm-layout{grid-template-columns:1fr;}.lm-side{border-left:none;border-top:1px solid #1a1a1a;max-height:200px;}}
 
   /* ── RESULTS ─────────────────────────── */
   #res-sec{display:none;margin-top:36px;}
@@ -104,13 +116,13 @@
   footer{text-align:center;padding:36px;font-size:.62rem;color:#1a1a1a;border-top:1px solid #0d0d0d;letter-spacing:2px;margin-top:50px;}
   .bk{animation:bk 1s step-end infinite;}
   @keyframes bk{50%{opacity:0;}}
-  @media(max-width:580px){header{padding:14px 16px;}.logo{font-size:1.5rem;}main{padding:36px 14px;}.mg{grid-template-columns:1fr;}.sn{font-size:3.8rem;}.dh{flex-direction:column;gap:16px;}.sd{text-align:left;}.lm-label{font-size:.5rem;}}
+  @media(max-width:580px){header{padding:14px 16px;}.logo{font-size:1.5rem;}main{padding:36px 14px;}.mg{grid-template-columns:1fr;}.sn{font-size:3.8rem;}.dh{flex-direction:column;gap:16px;}.sd{text-align:left;}}
 </style>
 </head>
 <body>
 <header>
   <div class="logo">LOOKS<span>SCORE</span> TERMINAL</div>
-  <div class="sb">VER 5.0 // MEDIAPIPE<br>STATUS: <span id="st" class="er">LOADING...</span><br><span id="ts"></span></div>
+  <div class="sb">VER 5.1 // MEDIAPIPE<br>STATUS: <span id="st" class="er">LOADING...</span><br><span id="ts"></span></div>
 </header>
 <main>
   <div class="intro">
@@ -158,14 +170,20 @@
   <!-- LANDMARK CORRECTION SECTION -->
   <div id="lm-sec">
     <h2>// <span style="color:var(--cyan)">LANDMARK MAP</span> — CORRECT IF NEEDED</h2>
-    <div class="lm-wrap" id="lm-wrap">
-      <img id="lm-img" src="" alt="">
-      <canvas id="lm-canvas"></canvas>
-      <!-- dots are injected here dynamically -->
+    <div class="lm-layout">
+      <div class="lm-wrap" id="lm-wrap">
+        <img id="lm-img" src="" alt="">
+        <canvas id="lm-canvas"></canvas>
+        <!-- dots injected here -->
+      </div>
+      <div class="lm-side">
+        <div class="lm-side-title">LANDMARKS</div>
+        <ul class="lm-legend" id="lm-legend"></ul>
+        <div class="lm-side-stats" id="lm-stats"></div>
+      </div>
     </div>
     <div class="lm-hint">
-      <strong>DRAG</strong> any dot to correct it &middot; <span class="cyan">CYAN</span> = corrected &middot; RED = original<br>
-      Fix misplaced dots for a more accurate score
+      <strong>DRAG</strong> any dot to correct it &middot; <span class="cyan">CYAN</span> = corrected &middot; RED = original &middot; hover dot to see label
     </div>
     <div class="lm-btns">
       <button id="reset-dots-btn">↺ RESET DOTS</button>
@@ -484,8 +502,8 @@ function showLandmarkMap(){
   const lmImg=$('lm-img');
   lmImg.src=uploadedDataURL;
 
-  // Remove old dots/labels
-  wrap.querySelectorAll('.lm-dot,.lm-label').forEach(el=>el.remove());
+  // Remove old dots
+  wrap.querySelectorAll('.lm-dot').forEach(el=>el.remove());
 
   // Draw mesh lines on canvas after image loads
   const drawMesh=()=>{
@@ -511,36 +529,48 @@ function showLandmarkMap(){
   if(lmImg.complete) drawMesh();
   else lmImg.onload=drawMesh;
 
-  // Create draggable dots with labels
+  // Populate legend sidebar
+  const legend=$('lm-legend');
+  legend.innerHTML='';
+  KEY_LANDMARKS.forEach(kl=>{
+    const li=document.createElement('li');
+    li.innerHTML=`<span class="dot-indicator"></span>${kl.label}`;
+    li.dataset.idx=kl.idx;
+    legend.appendChild(li);
+  });
+
+  // Stats
+  const correctedCount=lastLandmarks.filter((p,i)=>p.x!==originalLandmarks[i].x||p.y!==originalLandmarks[i].y).length;
+  $('lm-stats').innerHTML=`<div>Total: <strong>${KEY_LANDMARKS.length}</strong></div><div>Corrected: <strong style="color:var(--cyan)">${correctedCount}</strong></div>`;
+
+  // Create draggable dots (small, clean, no inline labels)
   const W=wrap.clientWidth;
-  KEY_LANDMARKS.forEach((kl,idx)=>{
+  KEY_LANDMARKS.forEach((kl)=>{
     const pt=lastLandmarks[kl.idx];
 
-    // Dot
     const dot=document.createElement('div');
     dot.className='lm-dot';
     dot.dataset.idx=kl.idx;
     dot.style.left=(pt.x*100)+'%';
     dot.style.top=(pt.y*100)+'%';
-    dot.title=kl.label;
-    wrap.appendChild(dot);
 
-    // Label
-    const lbl=document.createElement('div');
-    lbl.className='lm-label'+(pt.x>0.5?' left-side':'');
-    lbl.textContent=kl.label;
-    lbl.style.left=(pt.x*100)+'%';
-    lbl.style.top=(pt.y*100)+'%';
-    wrap.appendChild(lbl);
+    // Tooltip on hover
+    const tooltip=document.createElement('span');
+    tooltip.className='lm-tooltip';
+    tooltip.textContent=kl.label;
+    dot.appendChild(tooltip);
+
+    wrap.appendChild(dot);
 
     // ── Drag logic ──────────────────────────────────────
     let dragging=false;
     const onDown=e=>{
       e.preventDefault(); e.stopPropagation();
       dragging=true;
-      dot.classList.add('dragging','active');
+      dot.classList.add('dragging');
       document.addEventListener('pointermove',onMove);
       document.addEventListener('pointerup',onUp);
+      highlightLegend(kl.idx,true);
     };
     const onMove=e=>{
       if(!dragging)return;
@@ -550,21 +580,19 @@ function showLandmarkMap(){
       px=clamp(px,0,1); py=clamp(py,0,1);
       dot.style.left=(px*100)+'%';
       dot.style.top=(py*100)+'%';
-      lbl.style.left=(px*100)+'%';
-      lbl.style.top=(py*100)+'%';
-      // Update class for left-side labels
-      if(px>0.5) lbl.classList.add('left-side'); else lbl.classList.remove('left-side');
-      // Update landmarks in-place
       lastLandmarks[kl.idx]={x:px,y:py,z:lastLandmarks[kl.idx].z};
       dot.classList.add('corrected');
-      // Redraw mesh
       drawMesh();
+      // Update legend
+      updateLegendItem(kl.idx,true);
+      updateStats();
     };
     const onUp=()=>{
       dragging=false;
-      dot.classList.remove('dragging','active');
+      dot.classList.remove('dragging');
       document.removeEventListener('pointermove',onMove);
       document.removeEventListener('pointerup',onUp);
+      highlightLegend(kl.idx,false);
     };
     dot.addEventListener('pointerdown',onDown);
   });
@@ -573,13 +601,31 @@ function showLandmarkMap(){
   $('lm-sec').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
+function highlightLegend(idx,on){
+  const li=$(`lm-legend li[data-idx="${idx}"]`);
+  if(!li)return;
+  if(on){li.style.background='rgba(0,229,255,.1)';li.style.color='var(--cyan)';}
+  else{li.style.background='';li.style.color='';}
+}
+
+function updateLegendItem(idx,corrected){
+  const li=$(`lm-legend li[data-idx="${idx}"]`);
+  if(!li)return;
+  if(corrected) li.classList.add('corrected'); else li.classList.remove('corrected');
+}
+
+function updateStats(){
+  const correctedCount=lastLandmarks.filter((p,i)=>p.x!==originalLandmarks[i].x||p.y!==originalLandmarks[i].y).length;
+  $('lm-stats').innerHTML=`<div>Total: <strong>${KEY_LANDMARKS.length}</strong></div><div>Corrected: <strong style="color:var(--cyan)">${correctedCount}</strong></div>`;
+}
+
 // Reset dots to original positions
 $('reset-dots-btn').addEventListener('click',()=>{
   if(!originalLandmarks)return;
   lastLandmarks=originalLandmarks.map(p=>({x:p.x,y:p.y,z:p.z}));
   // Re-render
   const wrap=$('lm-wrap');
-  wrap.querySelectorAll('.lm-dot,.lm-label').forEach(el=>el.remove());
+  wrap.querySelectorAll('.lm-dot').forEach(el=>el.remove());
   showLandmarkMap();
 });
 

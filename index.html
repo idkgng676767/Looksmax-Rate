@@ -48,7 +48,8 @@
   /* ── LANDMARK MAP SECTION ─────────────────────────── */
   #lm-sec{display:none;margin-top:36px;}
   .lm-layout{display:flex;gap:0;border:1px solid #1e1e1e;border-top:1px solid var(--rdim);background:var(--sf);}
-  .lm-wrap{position:relative;flex:1;min-width:0;display:flex;align-items:flex-start;}
+  .lm-wrap{position:relative;flex:1;min-width:0;}
+  .lm-img-wrap{display:inline-block;position:relative;max-width:100%;}
   #lm-img{width:100%;display:block;height:auto;max-height:70vh;}
   #lm-canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
   .lm-dot{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--red);border:1.5px solid rgba(255,255,255,.7);transform:translate(-50%,-50%);cursor:grab;z-index:10;transition:box-shadow .15s,transform .15s;}
@@ -172,9 +173,11 @@
     <h2>// <span style="color:var(--cyan)">LANDMARK MAP</span> — CORRECT IF NEEDED</h2>
     <div class="lm-layout">
       <div class="lm-wrap" id="lm-wrap">
-        <img id="lm-img" src="" alt="">
-        <canvas id="lm-canvas"></canvas>
-        <!-- dots injected here -->
+        <div class="lm-img-wrap" id="lm-img-wrap">
+          <img id="lm-img" src="" alt="">
+          <canvas id="lm-canvas"></canvas>
+          <!-- dots injected here -->
+        </div>
       </div>
       <div class="lm-side">
         <div class="lm-side-title">LANDMARKS</div>
@@ -503,12 +506,14 @@ function showLandmarkMap(){
   lmImg.src=uploadedDataURL;
 
   // Remove old dots
-  wrap.querySelectorAll('.lm-dot').forEach(el=>el.remove());
+  const imgWrap=$('lm-img-wrap');
+  imgWrap.querySelectorAll('.lm-dot').forEach(el=>el.remove());
 
   // Draw mesh lines on canvas after image loads
   const drawMesh=()=>{
     const canvas=$('lm-canvas');
-    const W=wrap.clientWidth, H=wrap.clientHeight;
+    const imgWrap=$('lm-img-wrap');
+    const W=imgWrap.clientWidth, H=imgWrap.clientHeight;
     canvas.width=W; canvas.height=H;
     const ctx=canvas.getContext('2d');
     ctx.clearRect(0,0,W,H);
@@ -544,14 +549,15 @@ function showLandmarkMap(){
 
     updateStats();
 
-    // Create draggable dots positioned with pixel coords matching rendered image
-    const wrapRect=wrap.getBoundingClientRect();
+    // Create draggable dots positioned relative to the image wrap (which matches image size exactly)
+    const imgWrap=$('lm-img-wrap');
+    const imgWrapRect=imgWrap.getBoundingClientRect();
 
     KEY_LANDMARKS.forEach((kl)=>{
       const pt=lastLandmarks[kl.idx];
-      // Convert normalized coords to pixels within the wrap
-      const px=pt.x*wrapRect.width;
-      const py=pt.y*wrapRect.height;
+      // Convert normalized coords to pixels within the image wrap
+      const px=pt.x*imgWrapRect.width;
+      const py=pt.y*imgWrapRect.height;
 
       const dot=document.createElement('div');
       dot.className='lm-dot';
@@ -565,7 +571,7 @@ function showLandmarkMap(){
       tooltip.textContent=kl.label;
       dot.appendChild(tooltip);
 
-      wrap.appendChild(dot);
+      imgWrap.appendChild(dot);
 
       // ── Drag logic ──────────────────────────────────────
       let dragging=false;
@@ -579,7 +585,7 @@ function showLandmarkMap(){
       };
       const onMove=e=>{
         if(!dragging)return;
-        const rect=wrap.getBoundingClientRect();
+        const rect=imgWrap.getBoundingClientRect();
         let px=e.clientX-rect.left;
         let py=e.clientY-rect.top;
         px=clamp(px,0,rect.width); py=clamp(py,0,rect.height);
@@ -630,8 +636,8 @@ $('reset-dots-btn').addEventListener('click',()=>{
   if(!originalLandmarks)return;
   lastLandmarks=originalLandmarks.map(p=>({x:p.x,y:p.y,z:p.z}));
   // Re-render
-  const wrap=$('lm-wrap');
-  wrap.querySelectorAll('.lm-dot').forEach(el=>el.remove());
+  const imgWrap=$('lm-img-wrap');
+  imgWrap.querySelectorAll('.lm-dot').forEach(el=>el.remove());
   showLandmarkMap();
 });
 
@@ -728,8 +734,8 @@ $('rb').addEventListener('click',()=>{
   $('res-sec').style.display='none';
   $('lm-sec').style.display='none';
   // Clear landmark dots
-  const wrap=$('lm-wrap');
-  wrap.querySelectorAll('.lm-dot,.lm-label').forEach(el=>el.remove());
+  const imgWrap=$('lm-img-wrap');
+  imgWrap.querySelectorAll('.lm-dot').forEach(el=>el.remove());
   $('ov').getContext('2d').clearRect(0,0,9999,9999);
   $('up-sec').style.display='block';
   $('fi').value='';

@@ -47,9 +47,9 @@
 
   /* ── LANDMARK MAP SECTION ─────────────────────────── */
   #lm-sec{display:none;margin-top:36px;}
-  .lm-layout{display:grid;grid-template-columns:1fr 200px;gap:0;border:1px solid #1e1e1e;border-top:1px solid var(--rdim);background:var(--sf);}
-  .lm-wrap{position:relative;overflow:hidden;}
-  #lm-img{width:100%;display:block;}
+  .lm-layout{display:flex;gap:0;border:1px solid #1e1e1e;border-top:1px solid var(--rdim);background:var(--sf);}
+  .lm-wrap{position:relative;flex:1;min-width:0;display:flex;align-items:flex-start;}
+  #lm-img{width:100%;display:block;height:auto;max-height:70vh;}
   #lm-canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
   .lm-dot{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--red);border:1.5px solid rgba(255,255,255,.7);transform:translate(-50%,-50%);cursor:grab;z-index:10;transition:box-shadow .15s,transform .15s;}
   .lm-dot:hover{box-shadow:0 0 10px var(--cyan);transform:translate(-50%,-50%) scale(1.8);z-index:20;}
@@ -78,7 +78,7 @@
   #skip-lm-btn:hover{border-color:#444;color:#666;}
   #reset-dots-btn{color:var(--red);border-color:#331010;}
   #reset-dots-btn:hover{background:var(--red);color:#000;}
-  @media(max-width:640px){.lm-layout{grid-template-columns:1fr;}.lm-side{border-left:none;border-top:1px solid #1a1a1a;max-height:200px;}}
+  @media(max-width:640px){.lm-layout{flex-direction:column;}.lm-side{border-left:none;border-top:1px solid #1a1a1a;max-height:200px;}}
 
   /* ── RESULTS ─────────────────────────── */
   #res-sec{display:none;margin-top:36px;}
@@ -526,79 +526,85 @@ function showLandmarkMap(){
     ctx.setLineDash([]);
   };
 
-  if(lmImg.complete) drawMesh();
-  else lmImg.onload=drawMesh;
+  if(lmImg.complete && lmImg.naturalWidth) renderMap();
+  else lmImg.onload=renderMap;
 
-  // Populate legend sidebar
-  const legend=$('lm-legend');
-  legend.innerHTML='';
-  KEY_LANDMARKS.forEach(kl=>{
-    const li=document.createElement('li');
-    li.innerHTML=`<span class="dot-indicator"></span>${kl.label}`;
-    li.dataset.idx=kl.idx;
-    legend.appendChild(li);
-  });
+  function renderMap(){
+    drawMesh();
 
-  // Stats
-  const correctedCount=lastLandmarks.filter((p,i)=>p.x!==originalLandmarks[i].x||p.y!==originalLandmarks[i].y).length;
-  $('lm-stats').innerHTML=`<div>Total: <strong>${KEY_LANDMARKS.length}</strong></div><div>Corrected: <strong style="color:var(--cyan)">${correctedCount}</strong></div>`;
+    // Populate legend sidebar
+    const legend=$('lm-legend');
+    legend.innerHTML='';
+    KEY_LANDMARKS.forEach(kl=>{
+      const li=document.createElement('li');
+      li.innerHTML=`<span class="dot-indicator"></span>${kl.label}`;
+      li.dataset.idx=kl.idx;
+      legend.appendChild(li);
+    });
 
-  // Create draggable dots (small, clean, no inline labels)
-  const W=wrap.clientWidth;
-  KEY_LANDMARKS.forEach((kl)=>{
-    const pt=lastLandmarks[kl.idx];
+    updateStats();
 
-    const dot=document.createElement('div');
-    dot.className='lm-dot';
-    dot.dataset.idx=kl.idx;
-    dot.style.left=(pt.x*100)+'%';
-    dot.style.top=(pt.y*100)+'%';
+    // Create draggable dots positioned with pixel coords matching rendered image
+    const wrapRect=wrap.getBoundingClientRect();
 
-    // Tooltip on hover
-    const tooltip=document.createElement('span');
-    tooltip.className='lm-tooltip';
-    tooltip.textContent=kl.label;
-    dot.appendChild(tooltip);
+    KEY_LANDMARKS.forEach((kl)=>{
+      const pt=lastLandmarks[kl.idx];
+      // Convert normalized coords to pixels within the wrap
+      const px=pt.x*wrapRect.width;
+      const py=pt.y*wrapRect.height;
 
-    wrap.appendChild(dot);
+      const dot=document.createElement('div');
+      dot.className='lm-dot';
+      dot.dataset.idx=kl.idx;
+      dot.style.left=px+'px';
+      dot.style.top=py+'px';
 
-    // ── Drag logic ──────────────────────────────────────
-    let dragging=false;
-    const onDown=e=>{
-      e.preventDefault(); e.stopPropagation();
-      dragging=true;
-      dot.classList.add('dragging');
-      document.addEventListener('pointermove',onMove);
-      document.addEventListener('pointerup',onUp);
-      highlightLegend(kl.idx,true);
-    };
-    const onMove=e=>{
-      if(!dragging)return;
-      const rect=wrap.getBoundingClientRect();
-      let px=(e.clientX-rect.left)/rect.width;
-      let py=(e.clientY-rect.top)/rect.height;
-      px=clamp(px,0,1); py=clamp(py,0,1);
-      dot.style.left=(px*100)+'%';
-      dot.style.top=(py*100)+'%';
-      lastLandmarks[kl.idx]={x:px,y:py,z:lastLandmarks[kl.idx].z};
-      dot.classList.add('corrected');
-      drawMesh();
-      // Update legend
-      updateLegendItem(kl.idx,true);
-      updateStats();
-    };
-    const onUp=()=>{
-      dragging=false;
-      dot.classList.remove('dragging');
-      document.removeEventListener('pointermove',onMove);
-      document.removeEventListener('pointerup',onUp);
-      highlightLegend(kl.idx,false);
-    };
-    dot.addEventListener('pointerdown',onDown);
-  });
+      // Tooltip on hover
+      const tooltip=document.createElement('span');
+      tooltip.className='lm-tooltip';
+      tooltip.textContent=kl.label;
+      dot.appendChild(tooltip);
 
-  // Scroll to landmark map
-  $('lm-sec').scrollIntoView({behavior:'smooth',block:'start'});
+      wrap.appendChild(dot);
+
+      // ── Drag logic ──────────────────────────────────────
+      let dragging=false;
+      const onDown=e=>{
+        e.preventDefault(); e.stopPropagation();
+        dragging=true;
+        dot.classList.add('dragging');
+        document.addEventListener('pointermove',onMove);
+        document.addEventListener('pointerup',onUp);
+        highlightLegend(kl.idx,true);
+      };
+      const onMove=e=>{
+        if(!dragging)return;
+        const rect=wrap.getBoundingClientRect();
+        let px=e.clientX-rect.left;
+        let py=e.clientY-rect.top;
+        px=clamp(px,0,rect.width); py=clamp(py,0,rect.height);
+        dot.style.left=px+'px';
+        dot.style.top=py+'px';
+        // Store back as normalized 0-1
+        lastLandmarks[kl.idx]={x:px/rect.width,y:py/rect.height,z:lastLandmarks[kl.idx].z};
+        dot.classList.add('corrected');
+        drawMesh();
+        updateLegendItem(kl.idx,true);
+        updateStats();
+      };
+      const onUp=()=>{
+        dragging=false;
+        dot.classList.remove('dragging');
+        document.removeEventListener('pointermove',onMove);
+        document.removeEventListener('pointerup',onUp);
+        highlightLegend(kl.idx,false);
+      };
+      dot.addEventListener('pointerdown',onDown);
+    });
+
+    // Scroll to landmark map
+    $('lm-sec').scrollIntoView({behavior:'smooth',block:'start'});
+  }
 }
 
 function highlightLegend(idx,on){

@@ -359,7 +359,9 @@ function computeMetrics(lm){
   const jawMid=M(p(LM.jawMidLeft),p(LM.jawMidRight));
   const chinDrop=D(p(LM.chin),jawMid);
   const jawW=D(p(LM.jawMidLeft),p(LM.jawMidRight));
-  const jaw=clamp(40+(chinDrop/jawW)*100-(jawW/faceW)*40,8,94);
+  const jawwRatio=chinDrop/jawW; // higher = more defined jaw
+  const jawFaceRatio=jawW/faceW; // lower = more tapered (good), higher = rounder
+  const jaw=clamp(jawwRatio*150 - jawFaceRatio*25 + 55, 20, 96);
 
   const nb=p(LM.noseBridge);
   const symPairs=[
@@ -380,9 +382,9 @@ function computeMetrics(lm){
   const eyeRefW=D(p(LM.leftEyeOuter),p(LM.leftEyeInner));
   const tR=((lTilt+rTilt)/2)/eyeRefW;
   let cLabel,cScore;
-  if(tR<-0.06){cLabel='POSITIVE';cScore=88;}
-  else if(tR<0.04){cLabel='NEUTRAL';cScore=58;}
-  else{cLabel='NEGATIVE';cScore=22;}
+  if(tR<-0.06){cLabel='POSITIVE';cScore=82;}
+  else if(tR<0.04){cLabel='NEUTRAL';cScore=72;}
+  else{cLabel='NEGATIVE';cScore=50;}
 
   const cheekW=D(p(LM.cheekLeft),p(LM.cheekRight));
   const chk=clamp((cheekW/jawW-0.95)*250+40,12,92);
@@ -410,7 +412,9 @@ function computeMetrics(lm){
   const lips=clamp(100-Math.abs(upH/(loH+0.0001)-0.6)*240,15,92);
 
   const w=jaw*0.21+sym*0.18+cScore*0.17+chk*0.14+eye*0.12+thirds*0.10+nose*0.05+lips*0.03;
-  const score=parseFloat(clamp(w*0.073+1.3,1.5,9.7).toFixed(1));
+  // Scale weights to 0-10. 0.077*avg=6.16 at benchmark(80), +1.3=7.5. 
+  // With all metrics at 80 (solid attractiveness) -> 7.5. With metrics at 60 -> ~6.0. With metrics at 45 -> ~5.0.
+  const score=parseFloat(clamp(w*0.077+1.4,2.0,9.7).toFixed(1));
 
   return{score,
     metrics:{jawline:Math.round(jaw),symmetry:Math.round(sym),canthal_tilt:cLabel,

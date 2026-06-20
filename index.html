@@ -321,7 +321,7 @@ function computeMetrics(lm){
   console.log('=== FACE DEBUG ===');
   console.log('eyeAngle:',(eyeAngle*180/Math.PI).toFixed(1),'deg');
   console.log('faceW:',faceW.toFixed(4),'faceH:',faceH.toFixed(4),'fRatio:',fRatio.toFixed(3));
-  console.log('symNorm:',(symNorm*100).toFixed(2)+'% symDevs:',symDevs.map(v=>(v*100).toFixed(1)+'%').join(', '));
+  console.log('symNorm:',(symNorm*100).toFixed(2)+'%');
   console.log('tR:',tR.toFixed(4),'eR:',eR.toFixed(3),'cRatio:',cRatio.toFixed(3));
   console.log('thirdsDev:',thirdsDev.toFixed(3),'nRatio:',nRatio.toFixed(3),'lipRatio:',lipRatio.toFixed(3));
   console.log('SCORES: jaw:',jaw,'sym:',sym,'canthal:',cScore,'chk:',chk,'eye:',eye,'thirds:',thirds,'nose:',nose,'lips:',lips);

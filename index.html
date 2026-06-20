@@ -315,6 +315,17 @@ function computeMetrics(lm){
   const w=jaw*0.21+sym*0.18+cScore*0.17+chk*0.14+eye*0.12+thirds*0.10+nose*0.05+lips*0.03;
   const score=parseFloat(clamp(w*0.08+1.6,2.0,9.7).toFixed(1));
 
+  // DEBUG: log raw values to console
+  console.log('=== FACE DEBUG ===');
+  console.log('eyeAngle:',(eyeAngle*180/Math.PI).toFixed(1),'deg');
+  console.log('faceW:',faceW.toFixed(4),'faceH:',faceH.toFixed(4),'fRatio:',fRatio.toFixed(3));
+  console.log('symNorm:',(symNorm*100).toFixed(2)+'% symDevs:',symDevs.map(v=>(v*100).toFixed(1)+'%').join(', '));
+  console.log('tR:',tR.toFixed(4),'eR:',eR.toFixed(3),'cRatio:',cRatio.toFixed(3));
+  console.log('thirdsDev:',thirdsDev.toFixed(3),'nRatio:',nRatio.toFixed(3),'lipRatio:',lipRatio.toFixed(3));
+  console.log('SCORES: jaw:',jaw,'sym:',sym,'canthal:',cScore,'chk:',chk,'eye:',eye,'thirds:',thirds,'nose:',nose,'lips:',lips);
+  console.log('w:',w.toFixed(1),'score:',score);
+  console.log('==================');
+
   return{score,metrics:{jawline:Math.round(jaw),symmetry:Math.round(sym),canthal_tilt:cLabel,cheekbones:Math.round(chk),eye_region:Math.round(eye),facial_thirds:Math.round(thirds),nose:Math.round(nose),lips:Math.round(lips)},raw:{jaw,sym,cScore,chk,eye,thirds,nose,lips},lm};
 }
 
@@ -531,6 +542,11 @@ function renderResults(result,verdict,tips){
   const pot=parseFloat(clamp((100-(raw.jaw+raw.chk+raw.eye)/3)/40,0.5,3.0).toFixed(1));
   $('pn').textContent='+'+pot.toFixed(1);
   setTimeout(()=>{document.querySelectorAll('.mf').forEach(el=>el.style.width=el.dataset.p+'%');$('pf').style.width=Math.min(pot/3*100,100)+'%';},300);
+
+  // Debug: show raw metric scores below verdict
+  const dbg='<div style="font-size:.55rem;color:#444;margin-top:12px;padding:8px 12px;border:1px solid #1a1a1a;background:#0a0a0a;white-space:pre-wrap;line-height:1.7;font-family:monospace;">DEBUG RAW: jaw='+raw.jaw+' sym='+raw.sym+' canthal='+raw.cScore+' chk='+raw.chk+' eye='+raw.eye+' thirds='+raw.thirds+' nose='+raw.nose+' lips='+raw.lips+'</div>';
+  $('vt').innerHTML+=dbg;
+
   $('res-sec').scrollIntoView({behavior:'smooth',block:'start'});
 }
 

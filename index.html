@@ -375,7 +375,7 @@ function computeMetrics(lm){
     [LM.cheekLeft,LM.cheekRight],
   ];
   const asymAvg=symPairs.reduce((s,[l,r])=>s+Math.abs(D(p(l),nb)-D(p(r),nb))/faceW,0)/symPairs.length;
-  const sym=clamp(100-asymAvg*600,15,98);
+  const sym=clamp(100-asymAvg*120,25,98);
 
   const lTilt=p(LM.leftEyeOuter).y-p(LM.leftEyeInner).y;
   const rTilt=p(LM.rightEyeOuter).y-p(LM.rightEyeInner).y;
@@ -400,12 +400,14 @@ function computeMetrics(lm){
   const nY=p(LM.noseTip).y;
   const cY=p(LM.chin).y;
   const tY=p(LM.foreheadTop).y;
-  const t1=bY-tY,t2=nY-bY,t3=cY-nY,tot=t1+t2+t3,id=tot/3;
-  const thirds=clamp(100-(Math.abs(t1-id)+Math.abs(t2-id)+Math.abs(t3-id))/tot*300,18,96);
+  // Note: y increases downward (0=top, 1=bottom), so all heights are positive
+  const t1=Math.abs(bY-tY), t2=Math.abs(nY-bY), t3=Math.abs(cY-nY), tot=t1+t2+t3, id=tot/3;
+  const thirdsDev=(Math.abs(t1-id)+Math.abs(t2-id)+Math.abs(t3-id))/tot;
+  const thirds=clamp(100-thirdsDev*180,35,96);
 
   const noseW=D(p(LM.noseLeft),p(LM.noseRight));
   const ieW=D(p(LM.leftEyeInner),p(LM.rightEyeInner));
-  const nose=clamp(100-Math.abs(noseW/ieW-1.0)*170,15,94);
+  const nose=clamp(100-Math.abs(noseW/ieW-1.15)*100,30,96);
 
   const upH=D(p(LM.lipTop),p(LM.lipUpperMid));
   const loH=D(p(LM.lipBot),p(LM.lipLowerMid));

@@ -2,7 +2,7 @@
 
 A browser-based facial attractiveness scoring tool powered by Google's MediaPipe Face Mesh. Upload a front-facing photo and get a deterministic 1-10 rating across 8 facial metrics — no randomness, pure math.
 
-**Live demo:** [GitHub Pages link]
+**Live demo:** https://idkgng676767.github.io/Looksmax-Rate/
 
 ## How It Works
 

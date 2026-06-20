@@ -1,474 +1,133 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LOOKSCORE TERMINAL v5.1</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&display=swap');
-  :root{--red:#c0392b;--rdim:#7b1e14;--green:#00ff41;--bg:#080808;--sf:#0f0f0f;--wh:#f0f0f0;--tx:#d0d0d0;--cyan:#00e5ff;}
-  *{margin:0;padding:0;box-sizing:border-box;}
-  body{background:var(--bg);color:var(--tx);font-family:'Share Tech Mono',monospace;min-height:100vh;overflow-x:hidden;cursor:crosshair;}
-  body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.15) 2px,rgba(0,0,0,.15) 4px);pointer-events:none;z-index:999;}
-  header{border-bottom:1px solid var(--red);padding:18px 40px;display:flex;align-items:center;justify-content:space-between;}
-  .logo{font-family:'Bebas Neue',sans-serif;font-size:2rem;color:var(--wh);letter-spacing:4px;}
-  .logo span{color:var(--red);}
-  .sb{font-size:.68rem;color:#444;text-align:right;line-height:1.7;}
-  .on{color:var(--green);}.er{color:var(--red);}
-  main{max-width:800px;margin:0 auto;padding:50px 20px;}
-  .intro{font-size:.73rem;color:#333;margin-bottom:36px;line-height:1.9;}
-  .cmd{color:var(--red);}
-  h2{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:3px;color:var(--wh);margin-bottom:18px;border-left:3px solid var(--red);padding-left:12px;}
-  .drop{border:1px solid #1e1e1e;border-top:1px solid var(--rdim);background:var(--sf);padding:55px 40px;text-align:center;position:relative;cursor:pointer;transition:border-color .1s;}
-  .drop:hover,.drop.drag{border-color:var(--red);}
-  .drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
-  .di{font-size:2.8rem;color:#2a2a2a;margin-bottom:14px;display:block;}
-  .dl{font-size:.78rem;color:#444;line-height:2.1;}
-  .dl strong{color:var(--red);font-size:.95rem;letter-spacing:2px;}
-  .note{margin-top:26px;border:1px solid #1a1a1a;border-left:3px solid var(--red);padding:14px 18px;font-size:.7rem;color:#3a3a3a;line-height:1.9;}
-  .note strong{color:var(--red);}
-  #prev-sec{display:none;margin-top:36px;}
-  .cw{position:relative;width:100%;}
-  #ov{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;}
-  #img{width:100%;max-height:420px;object-fit:cover;object-position:top;display:block;filter:grayscale(15%) contrast(1.08);}
-  .cn{position:absolute;width:14px;height:14px;pointer-events:none;z-index:2;}
-  .cn.tl{top:7px;left:7px;border-top:2px solid var(--red);border-left:2px solid var(--red);}
-  .cn.tr{top:7px;right:7px;border-top:2px solid var(--red);border-right:2px solid var(--red);}
-  .cn.bl{bottom:7px;left:7px;border-bottom:2px solid var(--red);border-left:2px solid var(--red);}
-  .cn.br{bottom:7px;right:7px;border-bottom:2px solid var(--red);border-right:2px solid var(--red);}
-  #btn{margin-top:18px;width:100%;padding:16px;background:transparent;border:1px solid var(--red);color:var(--red);font-family:'Bebas Neue',sans-serif;font-size:1.35rem;letter-spacing:4px;cursor:pointer;transition:all .1s;}
-  #btn:hover{background:var(--red);color:#000;}
-  #load-sec{display:none;margin-top:36px;}
-  .tlog{font-size:.73rem;line-height:2.1;}
-  .ln{color:#444;margin-bottom:1px;}
-  .ln.r{color:var(--red);}.ln.w{color:#777;}.ln.g{color:var(--green);}.ln.d{color:#2a2a2a;}
-  .pb-w{margin-top:18px;height:2px;background:#111;}
-  .pb{height:100%;background:var(--red);width:0%;transition:width .3s;box-shadow:0 0 6px var(--red);}
 
-  /* ── LANDMARK MAP SECTION ─────────────────────────── */
-  #lm-sec{display:none;margin-top:36px;}
-  .lm-layout{display:flex;gap:0;border:1px solid #1e1e1e;border-top:1px solid var(--rdim);background:var(--sf);}
-  .lm-wrap{position:relative;flex:1;min-width:0;}
-  .lm-img-wrap{display:inline-block;position:relative;max-width:100%;}
-  #lm-img{width:100%;display:block;height:auto;max-height:70vh;}
-  #lm-canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
-  .lm-dot{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--red);border:1.5px solid rgba(255,255,255,.7);transform:translate(-50%,-50%);cursor:grab;z-index:10;transition:box-shadow .15s,transform .15s;}
-  .lm-dot:hover{box-shadow:0 0 10px var(--cyan);transform:translate(-50%,-50%) scale(1.8);z-index:20;}
-  .lm-dot.dragging{cursor:grabbing;box-shadow:0 0 14px var(--cyan);transform:translate(-50%,-50%) scale(2);z-index:20;}
-  .lm-dot.corrected{background:var(--cyan);border-color:#fff;}
-  .lm-tooltip{position:absolute;font-size:.5rem;color:#fff;background:rgba(0,229,255,.85);padding:2px 6px;border-radius:2px;white-space:nowrap;pointer-events:none;transform:translate(8px,-50%);z-index:25;display:none;letter-spacing:.5px;}
-  .lm-dot:hover .lm-tooltip{display:block;}
-  .lm-side{background:#0a0a0a;border-left:1px solid #1a1a1a;padding:12px;max-height:100%;overflow-y:auto;}
-  .lm-side-title{font-family:'Bebas Neue',sans-serif;font-size:.75rem;letter-spacing:2px;color:var(--cyan);margin-bottom:8px;border-bottom:1px solid #1a1a1a;padding-bottom:6px;}
-  .lm-legend{list-style:none;}
-  .lm-legend li{font-size:.55rem;color:#555;padding:3px 0;display:flex;align-items:center;gap:6px;line-height:1.4;border-bottom:1px solid #0f0f0f;}
-  .lm-legend li .dot-indicator{width:6px;height:6px;border-radius:50%;background:var(--red);flex-shrink:0;}
-  .lm-legend li.corrected .dot-indicator{background:var(--cyan);}
-  .lm-legend li.corrected{color:var(--cyan);}
-  .lm-side-stats{margin-top:10px;border-top:1px solid #1a1a1a;padding-top:8px;}
-  .lm-side-stats div{font-size:.55rem;color:#444;line-height:1.8;}
-  .lm-side-stats strong{color:var(--wh);}
-  .lm-hint{font-size:.65rem;color:#444;margin-top:10px;line-height:1.8;text-align:center;padding:0 20px;}
-  .lm-hint strong{color:var(--red);}
-  .lm-hint .cyan{color:var(--cyan);}
-  .lm-btns{display:flex;gap:10px;margin-top:14px;}
-  .lm-btns button{flex:1;padding:14px;font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:3px;cursor:pointer;transition:all .15s;border:1px solid;background:transparent;}
-  #reanalyze-btn{color:var(--cyan);border-color:var(--cyan);}
-  #reanalyze-btn:hover{background:var(--cyan);color:#000;}
-  #skip-lm-btn{color:#444;border-color:#1e1e1e;}
-  #skip-lm-btn:hover{border-color:#444;color:#666;}
-  #reset-dots-btn{color:var(--red);border-color:#331010;}
-  #reset-dots-btn:hover{background:var(--red);color:#000;}
-  @media(max-width:640px){.lm-layout{flex-direction:column;}.lm-side{border-left:none;border-top:1px solid #1a1a1a;max-height:200px;}}
-
-  /* ── RESULTS ─────────────────────────── */
-  #res-sec{display:none;margin-top:36px;}
-  .dh{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid #1e1e1e;padding-bottom:18px;margin-bottom:26px;}
-  .dt{font-size:.68rem;color:#2d2d2d;line-height:2.1;}
-  .dt strong{color:#4a4a4a;}
-  .sd{text-align:right;}
-  .sn{font-family:'Bebas Neue',sans-serif;font-size:5rem;line-height:1;}
-  .sn.lo{color:var(--red);}.sn.mi{color:#e67e22;}.sn.hi{color:#f1c40f;}.sn.tp{color:var(--green);}
-  .ss{font-size:1.8rem;color:#2a2a2a;font-family:'Bebas Neue',sans-serif;}
-  .tb{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:3px;padding:4px 10px;border:1px solid;display:inline-block;margin-top:6px;}
-  .mg{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#111;border:1px solid #111;margin-bottom:26px;}
-  .mc{background:var(--sf);padding:13px 15px;}
-  .ml{font-size:.62rem;color:#2d2d2d;text-transform:uppercase;letter-spacing:2px;margin-bottom:5px;}
-  .mv{font-size:.82rem;color:var(--wh);}
-  .mb{height:2px;background:#1a1a1a;margin-top:7px;}
-  .mf{height:100%;background:var(--red);transition:width 1s ease-out;}
-  .mf.gd{background:#f1c40f;}.mf.gt{background:var(--green);}
-  .vb{border:1px solid #1a1a1a;border-top:1px solid var(--red);padding:22px;margin-bottom:18px;background:var(--sf);}
-  .vb h3{font-family:'Bebas Neue',sans-serif;font-size:.95rem;letter-spacing:3px;color:var(--red);margin-bottom:14px;}
-  .vt{font-size:.76rem;line-height:2.1;color:#666;}
-  .vt strong{color:var(--wh);}
-  .ll{list-style:none;margin-top:14px;}
-  .ll li{font-size:.73rem;line-height:2.1;color:#444;padding-left:14px;position:relative;}
-  .ll li::before{content:'▸';position:absolute;left:0;color:var(--red);}
-  .ll li strong{color:#999;}
-  .pw{display:flex;align-items:center;gap:14px;margin-top:18px;}
-  .pl{font-size:.68rem;color:#2d2d2d;letter-spacing:2px;white-space:nowrap;}
-  .pb2{flex:1;height:3px;background:#111;}
-  .pf{height:100%;background:linear-gradient(90deg,var(--red),#f1c40f);transition:width 1.5s ease-out;}
-  .pn{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--wh);white-space:nowrap;}
-  .rb{margin-top:26px;width:100%;padding:13px;background:transparent;border:1px solid #1e1e1e;color:#2d2d2d;font-family:'Share Tech Mono',monospace;font-size:.73rem;letter-spacing:2px;cursor:pointer;transition:all .2s;}
-  .rb:hover{border-color:#444;color:#666;}
-  .eb{display:none;border:1px solid var(--red);padding:18px;margin-top:18px;font-size:.73rem;color:var(--red);line-height:1.9;white-space:pre-line;}
-  footer{text-align:center;padding:36px;font-size:.62rem;color:#1a1a1a;border-top:1px solid #0d0d0d;letter-spacing:2px;margin-top:50px;}
-  .bk{animation:bk 1s step-end infinite;}
-  @keyframes bk{50%{opacity:0;}}
-  @media(max-width:580px){header{padding:14px 16px;}.logo{font-size:1.5rem;}main{padding:36px 14px;}.mg{grid-template-columns:1fr;}.sn{font-size:3.8rem;}.dh{flex-direction:column;gap:16px;}.sd{text-align:left;}}
-</style>
-</head>
-<body>
-<header>
-  <div class="logo">LOOKS<span>SCORE</span> TERMINAL</div>
-  <div class="sb">VER 5.1 // MEDIAPIPE<br>STATUS: <span id="st" class="er">LOADING...</span><br><span id="ts"></span></div>
-</header>
-<main>
-  <div class="intro">
-    <span class="cmd">>></span> ENGINE: MediaPipe Face Mesh — 468 FACE LANDMARKS.<br>
-    <span class="cmd">>></span> ONE PHOTO = ONE DETERMINED RATING. ZERO RANDOMNESS.<br>
-    <span class="cmd">>></span> CORRECT LANDMARKS FOR <span style="color:var(--cyan)">ACCURATE</span> RESULTS.<span class="bk">_</span>
-  </div>
-
-  <div id="up-sec">
-    <h2>// UPLOAD SAMPLE</h2>
-    <div class="drop" id="drop">
-      <input type="file" id="fi" accept="image/*">
-      <span class="di">◉</span>
-      <div class="dl" id="dl">
-        <strong id="dt">WAITING FOR ENGINE...</strong><br>
-        status in top right corner<br><br>
-        <span style="color:#1e1e1e">JPG / PNG / WEBP</span>
-      </div>
-    </div>
-    <div class="note">
-      <strong>// ENGINE:</strong> MediaPipe Face Mesh (Google) — 468 face landmarks, runs in browser.<br>
-      Symmetry, jawline, canthal tilt — pure math. One photo = one result.<br>
-      <strong>// NEW:</strong> <span style="color:var(--cyan)">Correct misplaced landmarks</span> before scoring for maximum accuracy.
-    </div>
-  </div>
-
-  <div id="prev-sec">
-    <h2>// SAMPLE RECEIVED</h2>
-    <div class="cw">
-      <img id="img" src="" alt="">
-      <canvas id="ov"></canvas>
-      <div class="cn tl"></div><div class="cn tr"></div>
-      <div class="cn bl"></div><div class="cn br"></div>
-    </div>
-    <div class="eb" id="eb"></div>
-    <button id="btn">▶ RUN ANALYSIS</button>
-  </div>
-
-  <div id="load-sec">
-    <h2>// ANALYZING FACE...</h2>
-    <div class="tlog" id="tlog"></div>
-    <div class="pb-w"><div class="pb" id="pb"></div></div>
-  </div>
-
-  <!-- LANDMARK CORRECTION SECTION -->
-  <div id="lm-sec">
-    <h2>// <span style="color:var(--cyan)">LANDMARK MAP</span> — CORRECT IF NEEDED</h2>
-    <div class="lm-layout">
-      <div class="lm-wrap" id="lm-wrap">
-        <div class="lm-img-wrap" id="lm-img-wrap">
-          <img id="lm-img" src="" alt="">
-          <canvas id="lm-canvas"></canvas>
-          <!-- dots injected here -->
-        </div>
-      </div>
-      <div class="lm-side">
-        <div class="lm-side-title">LANDMARKS</div>
-        <ul class="lm-legend" id="lm-legend"></ul>
-        <div class="lm-side-stats" id="lm-stats"></div>
-      </div>
-    </div>
-    <div class="lm-hint">
-      <strong>DRAG</strong> any dot to correct it &middot; <span class="cyan">CYAN</span> = corrected &middot; RED = original &middot; hover dot to see label
-    </div>
-    <div class="lm-btns">
-      <button id="reset-dots-btn">↺ RESET DOTS</button>
-      <button id="reanalyze-btn">▶ RE-ANALYZE WITH CORRECTIONS</button>
-      <button id="skip-lm-btn">SKIP → VIEW RESULTS</button>
-    </div>
-  </div>
-
-  <div id="res-sec">
-    <h2>// VERDICT REACHED</h2>
-    <div class="dh">
-      <div class="dt">
-        <strong>ID:</strong> <span id="rid"></span><br>
-        <strong>DATE:</strong> <span id="rd"></span><br>
-        <strong>ENGINE:</strong> MEDIAPIPE FACE MESH<br>
-        <strong>STATUS:</strong> <span style="color:var(--red)">CLASSIFIED</span>
-      </div>
-      <div class="sd">
-        <div><span class="sn" id="sn">0.0</span><span class="ss"> /10</span></div>
-        <div class="tb" id="tb"></div>
-      </div>
-    </div>
-    <div class="mg" id="mg"></div>
-    <div class="vb">
-      <h3>// DIRECT VERDICT</h3>
-      <div class="vt" id="vt"></div>
-    </div>
-    <div class="vb">
-      <h3>// LOOKSMAX PROTOCOL</h3>
-      <div class="vt">
-        <span style="color:#333">Priorities based on weak metrics:</span>
-        <ul class="ll" id="ll"></ul>
-      </div>
-      <div class="pw">
-        <div class="pl">LOOKSMAX<br>POTENTIAL</div>
-        <div class="pb2"><div class="pf" id="pf" style="width:0%"></div></div>
-        <div class="pn" id="pn">+0.0</div>
-      </div>
-    </div>
-    <button class="rb" id="rb">[ NEW ANALYSIS ]</button>
-  </div>
-</main>
-<footer>LOOKSCORE TERMINAL // MEDIAPIPE ENGINE // COPE IS NOT AN OPTION</footer>
-
-<!-- MediaPipe via CDN -->
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
-
 <script>
 'use strict';
 const $=id=>document.getElementById(id);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-const D=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-const M=(a,b)=>({x:(a.x+b.x)/2,y:(a.y+b.y)/2});
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 
-// timestamp
 setInterval(()=>$('ts').textContent=new Date().toISOString().replace('T',' ').slice(0,19),1000);
 $('ts').textContent=new Date().toISOString().replace('T',' ').slice(0,19);
 
-let ready=false;
-let faceMesh=null;
+let ready=false,faceMesh=null;
+let lastLandmarks=null,originalLandmarks=null,uploadedDataURL=null;
 
-// ── Stored detection results for re-analysis ──────────
-let lastLandmarks=null;   // the 468-point array (normalized 0-1)
-let originalLandmarks=null; // deep copy before any corrections
-let uploadedDataURL=null;
-
-// ── Init MediaPipe Face Mesh ───────────────────────────────────────
 async function initMediaPipe(){
   const st=$('st');
   try{
     faceMesh=new FaceMesh({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}`});
-    faceMesh.setOptions({
-      maxNumFaces:1,
-      refineLandmarks:false,
-      minDetectionConfidence:0.3,
-      minTrackingConfidence:0.3,
-    });
+    faceMesh.setOptions({maxNumFaces:1,refineLandmarks:false,minDetectionConfidence:0.3,minTrackingConfidence:0.3});
     faceMesh.onResults(onResults);
     await faceMesh.initialize();
-    ready=true;
-    st.textContent='ONLINE'; st.className='on';
+    ready=true;st.textContent='ONLINE';st.className='on';
     $('dt').textContent='DRAG PHOTO / CLICK';
-    $('dl').innerHTML='<strong style="color:var(--red);font-size:.95rem;letter-spacing:2px">DRAG PHOTO / CLICK</strong><br>front-facing photo, good lighting<br>no filters or glasses<br><br><span style="color:#1e1e1e">JPG / PNG / WEBP</span>';
-  }catch(e){
-    st.textContent='ERR: '+e.message.slice(0,30);
-    st.className='er';
-    console.error('MediaPipe init failed:',e);
-  }
+    $('dl').innerHTML='<strong style="color:var(--red);font-size:.95rem;letter-spacing:2px">DRAG PHOTO / CLICK</strong><br>front-facing photo<br>no filters or glasses<br><br><span style="color:#1e1e1e">JPG / PNG / WEBP</span>';
+  }catch(e){st.textContent='ERR: '+e.message.slice(0,30);st.className='er';}
 }
 
-// ── Result callback ───────────────────────────────────────────────
 let resolveDetection=null;
-function onResults(results){
-  if(resolveDetection){
-    resolveDetection(results);
-    resolveDetection=null;
-  }
-}
+function onResults(results){if(resolveDetection){resolveDetection(results);resolveDetection=null;}}
 
-// ── Detect face on image ──────────────────────────────────────────
-async function detectFace(imgEl){
+function detectFace(imgEl){
   return new Promise((resolve,reject)=>{
     resolveDetection=resolve;
-    const timeout=setTimeout(()=>{
-      resolveDetection=null;
-      reject(new Error('Detection timeout'));
-    },20000);
-    faceMesh.send({image:imgEl}).catch(e=>{
-      clearTimeout(timeout);
-      resolveDetection=null;
-      reject(e);
-    }).then(()=>clearTimeout(timeout));
+    const t=setTimeout(()=>{resolveDetection=null;reject(new Error('timeout'));},15000);
+    faceMesh.send({image:imgEl}).catch(e=>{clearTimeout(t);resolveDetection=null;reject(e);}).then(()=>clearTimeout(t));
   });
 }
 
-// ── MediaPipe landmark indices ──────────────────
-const LM={
-  jawLeft:234, jawRight:454, chin:152, jawMidLeft:172, jawMidRight:397,
-  leftEyeOuter:33, leftEyeInner:133, leftEyeTop:159, leftEyeBot:145,
-  rightEyeOuter:362, rightEyeInner:263, rightEyeTop:386, rightEyeBot:374,
-  noseTip:1, noseLeft:129, noseRight:358, noseBridge:6,
-  leftBrowOuter:70, leftBrowInner:107,
-  rightBrowOuter:300, rightBrowInner:336,
-  lipTop:13, lipBot:14, lipLeft:61, lipRight:291,
-  lipUpperMid:12, lipLowerMid:15,
-  cheekLeft:116, cheekRight:345,
-  foreheadTop:10,
-};
+const LM={jawLeft:234,jawRight:454,chin:152,jawMidLeft:172,jawMidRight:397,leftEyeOuter:33,leftEyeInner:133,leftEyeTop:159,leftEyeBot:145,rightEyeOuter:362,rightEyeInner:263,rightEyeTop:386,rightEyeBot:374,noseTip:1,noseLeft:129,noseRight:358,noseBridge:6,leftBrowOuter:70,leftBrowInner:107,rightBrowOuter:300,rightBrowInner:336,lipTop:13,lipBot:14,lipLeft:61,lipRight:291,lipUpperMid:12,lipLowerMid:15,cheekLeft:116,cheekRight:345,foreheadTop:10};
 
-// Labeled key landmarks shown on the map
 const KEY_LANDMARKS=[
-  {idx:LM.jawLeft,      label:'JAW LEFT'},
-  {idx:LM.jawRight,     label:'JAW RIGHT'},
-  {idx:LM.chin,         label:'CHIN'},
-  {idx:LM.jawMidLeft,   label:'JAW MID L'},
-  {idx:LM.jawMidRight,  label:'JAW MID R'},
-  {idx:LM.leftEyeOuter, label:'EYE OUT L'},
-  {idx:LM.leftEyeInner, label:'EYE IN L'},
-  {idx:LM.leftEyeTop,   label:'EYE TOP L'},
-  {idx:LM.leftEyeBot,   label:'EYE BOT L'},
-  {idx:LM.rightEyeOuter,label:'EYE OUT R'},
-  {idx:LM.rightEyeInner,label:'EYE IN R'},
-  {idx:LM.rightEyeTop,  label:'EYE TOP R'},
-  {idx:LM.rightEyeBot,  label:'EYE BOT R'},
-  {idx:LM.leftBrowOuter, label:'BROW OUT L'},
-  {idx:LM.leftBrowInner,label:'BROW IN L'},
-  {idx:LM.rightBrowOuter,label:'BROW OUT R'},
-  {idx:LM.rightBrowInner,label:'BROW IN R'},
-  {idx:LM.noseTip,      label:'NOSE TIP'},
-  {idx:LM.noseLeft,     label:'NOSE L'},
-  {idx:LM.noseRight,    label:'NOSE R'},
-  {idx:LM.noseBridge,   label:'NOSE BRIDGE'},
-  {idx:LM.lipTop,       label:'LIP TOP'},
-  {idx:LM.lipBot,       label:'LIP BOT'},
-  {idx:LM.lipLeft,      label:'LIP LEFT'},
-  {idx:LM.lipRight,     label:'LIP RIGHT'},
-  {idx:LM.cheekLeft,    label:'CHEEK L'},
-  {idx:LM.cheekRight,   label:'CHEEK R'},
-  {idx:LM.foreheadTop,  label:'FOREHEAD'},
+  {idx:LM.jawLeft,label:'JAW LEFT'},{idx:LM.jawRight,label:'JAW RIGHT'},{idx:LM.chin,label:'CHIN'},
+  {idx:LM.jawMidLeft,label:'JAW MID L'},{idx:LM.jawMidRight,label:'JAW MID R'},
+  {idx:LM.leftEyeOuter,label:'EYE OUT L'},{idx:LM.leftEyeInner,label:'EYE IN L'},
+  {idx:LM.leftEyeTop,label:'EYE TOP L'},{idx:LM.leftEyeBot,label:'EYE BOT L'},
+  {idx:LM.rightEyeOuter,label:'EYE OUT R'},{idx:LM.rightEyeInner,label:'EYE IN R'},
+  {idx:LM.rightEyeTop,label:'EYE TOP R'},{idx:LM.rightEyeBot,label:'EYE BOT R'},
+  {idx:LM.leftBrowOuter,label:'BROW OUT L'},{idx:LM.leftBrowInner,label:'BROW IN L'},
+  {idx:LM.rightBrowOuter,label:'BROW OUT R'},{idx:LM.rightBrowInner,label:'BROW IN R'},
+  {idx:LM.noseTip,label:'NOSE TIP'},{idx:LM.noseLeft,label:'NOSE L'},{idx:LM.noseRight,label:'NOSE R'},
+  {idx:LM.noseBridge,label:'NOSE BRIDGE'},{idx:LM.lipTop,label:'LIP TOP'},{idx:LM.lipBot,label:'LIP BOT'},
+  {idx:LM.lipLeft,label:'LIP LEFT'},{idx:LM.lipRight,label:'LIP RIGHT'},
+  {idx:LM.cheekLeft,label:'CHEEK L'},{idx:LM.cheekRight,label:'CHEEK R'},
+  {idx:LM.foreheadTop,label:'FOREHEAD'},
 ];
 
 function computeMetrics(lm){
   const p=i=>({x:lm[i].x,y:lm[i].y});
-  const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+  const D=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 
-  // ── HEAD TILT COMPENSATION ──────────────────────────
-  const le=p(LM.leftEyeOuter), re=p(LM.rightEyeOuter);
-  const eyeAngle=Math.atan2(re.y-le.y, re.x-le.x);
-  const cosA=Math.cos(-eyeAngle), sinA=Math.sin(-eyeAngle);
-  const eyeMid={x:(le.x+re.x)/2, y:(le.y+re.y)/2};
-  const rp=i=>{
-    const pt=p(i);
-    const dx=pt.x-eyeMid.x, dy=pt.y-eyeMid.y;
-    return {x:dx*cosA-dy*sinA+eyeMid.x, y:dx*sinA+dy*cosA+eyeMid.y};
-  };
+  // Head tilt compensation
+  const le=p(LM.leftEyeOuter),re=p(LM.rightEyeOuter);
+  const eyeAngle=Math.atan2(re.y-le.y,re.x-le.x);
+  const cosA=Math.cos(-eyeAngle),sinA=Math.sin(-eyeAngle);
+  const eyeMid={x:(le.x+re.x)/2,y:(le.y+re.y)/2};
+  const rp=i=>{const pt=p(i);const dx=pt.x-eyeMid.x,dy=pt.y-eyeMid.y;return {x:dx*cosA-dy*sinA+eyeMid.x,y:dx*sinA+dy*cosA+eyeMid.y};};
 
-  const faceW=dist(rp(LM.jawLeft),rp(LM.jawRight));
-  const faceH=dist(rp(LM.foreheadTop),rp(LM.chin));
+  const faceW=D(rp(LM.jawLeft),rp(LM.jawRight));
+  const faceH=D(rp(LM.foreheadTop),rp(LM.chin));
 
-  // ── JAWLINE ──────────────────────────────────────────
+  // JAWLINE: faceH/faceW ratio (square face = higher)
   const fRatio=faceH/faceW;
-  const jaw=clamp(Math.round(90-Math.abs(fRatio-1.35)*55),22,96);
+  const jaw=clamp(Math.round(100-Math.abs(fRatio-1.35)*80),20,96);
 
-  // ── SYMMETRY ─────────────────────────────────────────
+  // SYMMETRY: mirror left points across nose-bridge axis
   const nb=rp(LM.noseBridge);
-  const centerX=nb.x;
-  const symPairs=[[LM.leftEyeOuter,LM.rightEyeOuter],[LM.leftEyeInner,LM.rightEyeInner],[LM.leftBrowOuter,LM.rightBrowOuter],[LM.leftBrowInner,LM.rightBrowInner],[LM.noseLeft,LM.noseRight],[LM.lipLeft,LM.lipRight],[LM.jawLeft,LM.jawRight],[LM.cheekLeft,LM.cheekRight]];
-  const symDevs=symPairs.map(([l,r])=>{
-    const a=rp(l), b=rp(r);
-    const idealRx=2*centerX-a.x;
-    return Math.abs(b.x-idealRx)/faceW;
-  });
-  const symAvg=symDevs.reduce((a,b)=>a+b,0)/symDevs.length;
-  // symAvg is deviation/faceW ratio. Normal: 0.01-0.03.
-  // 0→100, 0.01→85, 0.02→70, 0.03→55, 0.05→25
-  const sym=clamp(Math.round(100-symAvg*1500),30,98);
+  const pairs=[[LM.leftEyeOuter,LM.rightEyeOuter],[LM.leftEyeInner,LM.rightEyeInner],[LM.leftBrowOuter,LM.rightBrowOuter],[LM.leftBrowInner,LM.rightBrowInner],[LM.noseLeft,LM.noseRight],[LM.lipLeft,LM.lipRight],[LM.jawLeft,LM.jawRight],[LM.cheekLeft,LM.cheekRight]];
+  let symTotal=0;
+  for(const[l,r]of pairs){const a=rp(l),b=rp(r);symTotal+=Math.abs(b.x-(2*nb.x-a.x));}
+  const symNorm=(symTotal/pairs.length)/faceW;
+  const sym=clamp(Math.round(100-symNorm*800),25,98);
 
-  // ── CANTHAL TILT ─────────────────────────────────────
-  const lOuter=rp(LM.leftEyeOuter), lInner=rp(LM.leftEyeInner);
-  const rOuter=rp(LM.rightEyeOuter), rInner=rp(LM.rightEyeInner);
-  const lTilt=lOuter.y-lInner.y;
-  const rTilt=rOuter.y-rInner.y;
-  const lEW=dist(lOuter,lInner), rEW=dist(rOuter,rInner);
-  const tR=((lTilt/lEW)+(rTilt/rEW))/2;
+  // CANTHAL TILT
+  const lO=rp(LM.leftEyeOuter),lI=rp(LM.leftEyeInner);
+  const rO=rp(LM.rightEyeOuter),rI=rp(LM.rightEyeInner);
+  const lEW=D(lO,lI),rEW=D(rO,rI);
+  const tR=(((lO.y-lI.y)/lEW)+((rO.y-rI.y)/rEW))/2;
   let cLabel,cScore;
   if(tR<-0.05){cLabel='POSITIVE';cScore=85;}
   else if(tR<0.03){cLabel='NEUTRAL';cScore=72;}
   else{cLabel='NEGATIVE';cScore=48;}
 
-  // ── CHEEKBONES ───────────────────────────────────────
-  const cheekW=dist(rp(LM.cheekLeft),rp(LM.cheekRight));
-  const jawW=dist(rp(LM.jawMidLeft),rp(LM.jawMidRight));
-  const cRatio=cheekW/jawW;
-  const chk=clamp(Math.round(45+(cRatio-0.85)*50),18,94);
+  // CHEEKBONES
+  const cheekW=D(rp(LM.cheekLeft),rp(LM.cheekRight));
+  const jawW=D(rp(LM.jawMidLeft),rp(LM.jawMidRight));
+  const chk=clamp(Math.round(50+(cheekW/jawW-0.9)*55),15,94);
 
-  // ── EYE REGION ───────────────────────────────────────
-  const lEH=dist(rp(LM.leftEyeTop),rp(LM.leftEyeBot));
-  const rEH=dist(rp(LM.rightEyeTop),rp(LM.rightEyeBot));
+  // EYE REGION
+  const lEH=D(rp(LM.leftEyeTop),rp(LM.leftEyeBot));
+  const rEH=D(rp(LM.rightEyeTop),rp(LM.rightEyeBot));
   const eR=(lEH/lEW+rEH/rEW)/2;
-  const eye=clamp(Math.round(-200*Math.pow(eR-0.3,2)+90),18,94);
+  const eye=clamp(Math.round(-250*Math.pow(eR-0.3,2)+92),15,94);
 
-  // ── FACIAL THIRDS ────────────────────────────────────
+  // FACIAL THIRDS
   const browY=(rp(LM.leftBrowInner).y+rp(LM.rightBrowInner).y)/2;
-  const noseY=rp(LM.noseTip).y;
-  const chinY=rp(LM.chin).y;
-  const foreheadY=rp(LM.foreheadTop).y;
-  const t1=browY-foreheadY, t2=noseY-browY, t3=chinY-noseY;
-  const tot=t1+t2+t3, ideal=tot/3;
+  const t1=browY-rp(LM.foreheadTop).y,t2=rp(LM.noseTip).y-browY,t3=rp(LM.chin).y-rp(LM.noseTip).y;
+  const tot=t1+t2+t3,ideal=tot/3;
   const thirdsDev=(Math.abs(t1-ideal)+Math.abs(t2-ideal)+Math.abs(t3-ideal))/tot;
-  // 0→100, 0.1→90, 0.15→85, 0.2→80, 0.3→70
-  const thirds=clamp(Math.round(100-thirdsDev*100),40,96);
+  const thirds=clamp(Math.round(100-thirdsDev*100),35,96);
 
-  // ── NOSE ─────────────────────────────────────────────
-  const noseW=dist(rp(LM.noseLeft),rp(LM.noseRight));
-  const ieW=dist(rp(LM.leftEyeInner),rp(LM.rightEyeInner));
+  // NOSE
+  const noseW=D(rp(LM.noseLeft),rp(LM.noseRight));
+  const ieW=D(rp(LM.leftEyeInner),rp(LM.rightEyeInner));
   const nRatio=noseW/ieW;
-  // ideal 0.8-1.4. 0.7→84, 0.9→97, 1.1→100, 1.3→97, 1.5→84, 1.8→58
-  const nose=clamp(Math.round(100-Math.pow(nRatio-1.1,2)*200),30,96);
+  const nose=clamp(Math.round(100-Math.pow(nRatio-1.1,2)*180),25,96);
 
-  // ── LIPS ─────────────────────────────────────────────
-  const upH=dist(rp(LM.lipTop),rp(LM.lipUpperMid));
-  const loH=dist(rp(LM.lipBot),rp(LM.lipLowerMid));
-  const lipRatio=upH/(loH+0.0001);
-  const lips=clamp(Math.round(100-Math.pow(lipRatio-0.6,2)*420),20,94);
+  // LIPS
+  const upH=D(rp(LM.lipTop),rp(LM.lipUpperMid));
+  const loH=D(rp(LM.lipBot),rp(LM.lipLowerMid));
+  const lipRatio=upH/(loH+1e-6);
+  const lips=clamp(Math.round(100-Math.pow(lipRatio-0.6,2)*380),15,94);
 
-  // ── FINAL SCORE ──────────────────────────────────────
+  // FINAL SCORE
   const w=jaw*0.21+sym*0.18+cScore*0.17+chk*0.14+eye*0.12+thirds*0.10+nose*0.05+lips*0.03;
-  const score=parseFloat(clamp(w*0.084+1.1,2.0,9.7).toFixed(1));
+  const score=parseFloat(clamp(w*0.08+1.6,2.0,9.7).toFixed(1));
 
-  // ── DEBUG raw values ────────────────────────────────
-  const _dbg=[];
-  _dbg.push('eyeAngle: '+(eyeAngle*180/Math.PI).toFixed(1)+' deg');
-  _dbg.push('faceW: '+faceW.toFixed(4)+' faceH: '+faceH.toFixed(4)+' fRatio: '+fRatio.toFixed(3));
-  _dbg.push('symAvg: '+(symAvg*100).toFixed(2)+'% of faceW');
-  _dbg.push('symDevs(%): '+symDevs.map(v=>(v*100).toFixed(1)).join(','));
-  _dbg.push('tR: '+tR.toFixed(4));
-  _dbg.push('eR: '+eR.toFixed(3));
-  _dbg.push('cRatio: '+cRatio.toFixed(3));
-  _dbg.push('thirdsDev: '+thirdsDev.toFixed(3)+' t1:'+t1.toFixed(3)+' t2:'+t2.toFixed(3)+' t3:'+t3.toFixed(3));
-  _dbg.push('nRatio: '+nRatio.toFixed(3));
-  _dbg.push('lipRatio: '+lipRatio.toFixed(3));
-  _dbg.push('---SCORES---');
-  _dbg.push('jaw:'+jaw+' sym:'+sym+' canthal:'+cScore+' chk:'+chk+' eye:'+eye+' thirds:'+thirds+' nose:'+nose+' lips:'+lips);
-  _dbg.push('w:'+w.toFixed(1)+' score:'+score);
-
-  return{score,
-    metrics:{jawline:Math.round(jaw),symmetry:Math.round(sym),canthal_tilt:cLabel,
-      cheekbones:Math.round(chk),eye_region:Math.round(eye),facial_thirds:Math.round(thirds),
-      nose:Math.round(nose),lips:Math.round(lips)},
-    raw:{jaw,sym,cScore,chk,eye,thirds,nose,lips},
-    lm,debug:_dbg
-  };
+  return{score,metrics:{jawline:Math.round(jaw),symmetry:Math.round(sym),canthal_tilt:cLabel,cheekbones:Math.round(chk),eye_region:Math.round(eye),facial_thirds:Math.round(thirds),nose:Math.round(nose),lips:Math.round(lips)},raw:{jaw,sym,cScore,chk,eye,thirds,nose,lips},lm};
 }
-
-// ── Upload handlers ───────────────────────────────────────────────
-const drop=$('drop');
-drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('drag');});
-drop.addEventListener('dragleave',()=>drop.classList.remove('drag'));
-drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('drag');const f=e.dataTransfer.files[0];if(f?.type.startsWith('image/'))handleFile(f);});
-$('fi').addEventListener('change',e=>{if(e.target.files[0])handleFile(e.target.files[0]);});
 
 function handleFile(file){
   if(!ready){alert('Wait for ONLINE status.');return;}
@@ -483,6 +142,12 @@ function handleFile(file){
   r.readAsDataURL(file);
 }
 
+const drop=$('drop');
+drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('drag');});
+drop.addEventListener('dragleave',()=>drop.classList.remove('drag'));
+drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('drag');const f=e.dataTransfer.files[0];if(f?.type.startsWith('image/'))handleFile(f);});
+$('fi').addEventListener('change',e=>{if(e.target.files[0])handleFile(e.target.files[0]);});
+
 $('btn').addEventListener('click',async()=>{
   $('prev-sec').style.display='none';
   $('load-sec').style.display='block';
@@ -494,40 +159,23 @@ $('btn').addEventListener('click',async()=>{
 const log=(t,c='w')=>{const d=document.createElement('div');d.className='ln '+c;d.textContent=t;$('tlog').appendChild(d);};
 const setP=p=>$('pb').style.width=p+'%';
 
-// ── Main analysis ─────────────────────────────────────────────────
 async function runAnalysis(){
   const imgEl=$('img');
-  if(!imgEl.complete||!imgEl.naturalWidth){
-    await new Promise(r=>{imgEl.onload=r;imgEl.onerror=r;});
-    await sleep(50);
-  }
-
-  log('> MEDIAPIPE FACE MESH ACTIVATED.','w'); setP(12); await sleep(60);
-  log('> SENDING FRAME TO ENGINE...','w'); setP(22);
-
+  if(!imgEl.complete||!imgEl.naturalWidth){await new Promise(r=>{imgEl.onload=r;imgEl.onerror=r;});await sleep(50);}
+  log('> MEDIAPIPE FACE MESH ACTIVATED.','w');setP(12);await sleep(60);
+  log('> SENDING FRAME TO ENGINE...','w');setP(22);
   let results;
-  try{
-    results=await detectFace(imgEl);
-  }catch(e){
-    return fail('Engine crashed: '+e.message+'\nTry refreshing the page.');
-  }
-
-  if(!results.multiFaceLandmarks||results.multiFaceLandmarks.length===0){
-    return fail('Face not detected.\n\nRequirements:\n— clear front-facing photo\n— face takes up >40% of frame\n— good lighting, no shadows\n— no glasses or mask');
-  }
-
+  try{results=await detectFace(imgEl);}
+  catch(e){return fail('Engine crashed: '+e.message);}
+  if(!results.multiFaceLandmarks||results.multiFaceLandmarks.length===0){return fail('Face not detected.\n\nRequirements:\n- clear front-facing photo\n- face takes up >40% of frame\n- good lighting, no shadows\n- no glasses or mask');}
   const lm=results.multiFaceLandmarks[0];
   setP(50);
-  log(`> FACE FOUND ✓  (${lm.length} LANDMARKS).`,'g'); await sleep(60);
-  log('> LANDMARKS MAPPED — REVIEWING...','w'); setP(65); await sleep(60);
-
-  // Store landmarks
-  lastLandmarks=lm.map(p=>({x:p.x,y:p.y,z:p.z||0}));
-  originalLandmarks=lm.map(p=>({x:p.x,y:p.y,z:p.z||0}));
-
-  log('> COMPUTING METRICS...','w'); setP(80); await sleep(60);
-  log('> SCORE READY — SHOWING LANDMARK MAP.','r'); setP(100); await sleep(400);
-
+  log('> FACE FOUND ('+lm.length+' LANDMARKS).','g');await sleep(60);
+  log('> LANDMARKS MAPPED - REVIEWING...','w');setP(65);await sleep(60);
+  lastLandmarks=lm.map(pt=>({x:pt.x,y:pt.y,z:pt.z||0}));
+  originalLandmarks=lm.map(pt=>({x:pt.x,y:pt.y,z:pt.z||0}));
+  log('> COMPUTING METRICS...','w');setP(80);await sleep(60);
+  log('> SCORE READY.','r');setP(100);await sleep(400);
   $('load-sec').style.display='none';
   showLandmarkMap();
 }
@@ -539,151 +187,97 @@ function fail(msg){
   $('eb').style.display='block';
 }
 
-// ── LANDMARK MAP ──────────────────────────────────────────────────
 function showLandmarkMap(){
   $('lm-sec').style.display='block';
-
-  const wrap=$('lm-wrap');
   const lmImg=$('lm-img');
   lmImg.src=uploadedDataURL;
-
-  // Remove old dots
   const imgWrap=$('lm-img-wrap');
   imgWrap.querySelectorAll('.lm-dot').forEach(el=>el.remove());
-
-  // Draw mesh lines on canvas after image loads
   const drawMesh=()=>{
     const canvas=$('lm-canvas');
-    const imgWrap=$('lm-img-wrap');
-    const W=imgWrap.clientWidth, H=imgWrap.clientHeight;
-    canvas.width=W; canvas.height=H;
+    const W=imgWrap.clientWidth,H=imgWrap.clientHeight;
+    canvas.width=W;canvas.height=H;
     const ctx=canvas.getContext('2d');
     ctx.clearRect(0,0,W,H);
-
-    // Draw jaw outline
     const JAW=[234,93,132,58,172,136,149,148,152,377,378,365,397,288,361,323,454];
     ctx.strokeStyle='rgba(192,57,43,0.35)';ctx.lineWidth=1.5;ctx.beginPath();
-    JAW.forEach((i,n)=>{const p=lastLandmarks[i];n===0?ctx.moveTo(p.x*W,p.y*H):ctx.lineTo(p.x*W,p.y*H);});
+    JAW.forEach((i,n)=>{const pt=lastLandmarks[i];n===0?ctx.moveTo(pt.x*W,pt.y*H):ctx.lineTo(pt.x*W,pt.y*H);});
     ctx.stroke();
-
-    // Draw symmetry axis
     ctx.strokeStyle='rgba(0,229,255,0.15)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
     const nb=lastLandmarks[LM.noseBridge];
     ctx.beginPath();ctx.moveTo(nb.x*W,0);ctx.lineTo(nb.x*W,H);ctx.stroke();
     ctx.setLineDash([]);
   };
-
-  if(lmImg.complete && lmImg.naturalWidth) renderMap();
+  if(lmImg.complete&&lmImg.naturalWidth)renderMap();
   else lmImg.onload=renderMap;
-
   function renderMap(){
     drawMesh();
-
-    // Populate legend sidebar
     const legend=$('lm-legend');
     legend.innerHTML='';
     KEY_LANDMARKS.forEach(kl=>{
       const li=document.createElement('li');
-      li.innerHTML=`<span class="dot-indicator"></span>${kl.label}`;
+      li.innerHTML='<span class="dot-indicator"></span>'+kl.label;
       li.dataset.idx=kl.idx;
       legend.appendChild(li);
     });
-
     updateStats();
-
-    // Create draggable dots positioned relative to the image wrap (which matches image size exactly)
-    const imgWrap=$('lm-img-wrap');
     const imgWrapRect=imgWrap.getBoundingClientRect();
-
-    KEY_LANDMARKS.forEach((kl)=>{
+    KEY_LANDMARKS.forEach(kl=>{
       const pt=lastLandmarks[kl.idx];
-      // Convert normalized coords to pixels within the image wrap
-      const px=pt.x*imgWrapRect.width;
-      const py=pt.y*imgWrapRect.height;
-
+      const px=pt.x*imgWrapRect.width,py=pt.y*imgWrapRect.height;
       const dot=document.createElement('div');
       dot.className='lm-dot';
       dot.dataset.idx=kl.idx;
       dot.style.left=px+'px';
       dot.style.top=py+'px';
-
-      // Tooltip on hover
       const tooltip=document.createElement('span');
       tooltip.className='lm-tooltip';
       tooltip.textContent=kl.label;
       dot.appendChild(tooltip);
-
       imgWrap.appendChild(dot);
-
-      // ── Drag logic ──────────────────────────────────────
       let dragging=false;
-      const onDown=e=>{
-        e.preventDefault(); e.stopPropagation();
-        dragging=true;
-        dot.classList.add('dragging');
-        document.addEventListener('pointermove',onMove);
-        document.addEventListener('pointerup',onUp);
-        highlightLegend(kl.idx,true);
-      };
+      const onDown=e=>{e.preventDefault();e.stopPropagation();dragging=true;dot.classList.add('dragging');document.addEventListener('pointermove',onMove);document.addEventListener('pointerup',onUp);highlightLegend(kl.idx,true);};
       const onMove=e=>{
         if(!dragging)return;
         const rect=imgWrap.getBoundingClientRect();
-        let px=e.clientX-rect.left;
-        let py=e.clientY-rect.top;
-        px=clamp(px,0,rect.width); py=clamp(py,0,rect.height);
-        dot.style.left=px+'px';
-        dot.style.top=py+'px';
-        // Store back as normalized 0-1
+        let px=e.clientX-rect.left,py=e.clientY-rect.top;
+        px=clamp(px,0,rect.width);py=clamp(py,0,rect.height);
+        dot.style.left=px+'px';dot.style.top=py+'px';
         lastLandmarks[kl.idx]={x:px/rect.width,y:py/rect.height,z:lastLandmarks[kl.idx].z};
-        dot.classList.add('corrected');
-        drawMesh();
-        updateLegendItem(kl.idx,true);
-        updateStats();
+        dot.classList.add('corrected');drawMesh();updateLegendItem(kl.idx,true);updateStats();
       };
-      const onUp=()=>{
-        dragging=false;
-        dot.classList.remove('dragging');
-        document.removeEventListener('pointermove',onMove);
-        document.removeEventListener('pointerup',onUp);
-        highlightLegend(kl.idx,false);
-      };
+      const onUp=()=>{dragging=false;dot.classList.remove('dragging');document.removeEventListener('pointermove',onMove);document.removeEventListener('pointerup',onUp);highlightLegend(kl.idx,false);};
       dot.addEventListener('pointerdown',onDown);
     });
-
-    // Scroll to landmark map
     $('lm-sec').scrollIntoView({behavior:'smooth',block:'start'});
   }
 }
 
 function highlightLegend(idx,on){
-  const li=$(`lm-legend li[data-idx="${idx}"]`);
+  const li=document.querySelector('lm-legend li[data-idx="'+idx+'"]');
   if(!li)return;
   if(on){li.style.background='rgba(0,229,255,.1)';li.style.color='var(--cyan)';}
   else{li.style.background='';li.style.color='';}
 }
 
 function updateLegendItem(idx,corrected){
-  const li=$(`lm-legend li[data-idx="${idx}"]`);
+  const li=document.querySelector('lm-legend li[data-idx="'+idx+'"]');
   if(!li)return;
-  if(corrected) li.classList.add('corrected'); else li.classList.remove('corrected');
+  if(corrected)li.classList.add('corrected');else li.classList.remove('corrected');
 }
 
 function updateStats(){
   const correctedCount=lastLandmarks.filter((p,i)=>p.x!==originalLandmarks[i].x||p.y!==originalLandmarks[i].y).length;
-  $('lm-stats').innerHTML=`<div>Total: <strong>${KEY_LANDMARKS.length}</strong></div><div>Corrected: <strong style="color:var(--cyan)">${correctedCount}</strong></div>`;
+  $('lm-stats').innerHTML='<div>Total: <strong>'+KEY_LANDMARKS.length+'</strong></div><div>Corrected: <strong style="color:var(--cyan)">'+correctedCount+'</strong></div>';
 }
 
-// Reset dots to original positions
 $('reset-dots-btn').addEventListener('click',()=>{
   if(!originalLandmarks)return;
   lastLandmarks=originalLandmarks.map(p=>({x:p.x,y:p.y,z:p.z}));
-  // Re-render
-  const imgWrap=$('lm-img-wrap');
-  imgWrap.querySelectorAll('.lm-dot').forEach(el=>el.remove());
+  $('lm-img-wrap').querySelectorAll('.lm-dot').forEach(el=>el.remove());
   showLandmarkMap();
 });
 
-// Re-analyze with corrected landmarks
 $('reanalyze-btn').addEventListener('click',()=>{
   $('lm-sec').style.display='none';
   const result=computeMetrics(lastLandmarks);
@@ -692,7 +286,6 @@ $('reanalyze-btn').addEventListener('click',()=>{
   renderResults(result,verdict,tips);
 });
 
-// Skip — just show results with original landmarks
 $('skip-lm-btn').addEventListener('click',()=>{
   $('lm-sec').style.display='none';
   const result=computeMetrics(lastLandmarks);
@@ -701,41 +294,31 @@ $('skip-lm-btn').addEventListener('click',()=>{
   renderResults(result,verdict,tips);
 });
 
-// ── Verdict ───────────────────────────────────────────────────────
 function buildVerdict(score,m,raw){
   const NM={jaw:'jawline',chk:'cheekbones',eye:'eye region',sym:'symmetry',thirds:'proportions'};
   const ranked=Object.entries({jaw:raw.jaw,chk:raw.chk,eye:raw.eye,sym:raw.sym,thirds:raw.thirds}).sort((a,b)=>a[1]-b[1]);
   const wL=ranked.slice(0,2).map(([k])=>NM[k]);
   const sL=NM[ranked[ranked.length-1][0]];
-  const ct={POSITIVE:'Positive canthal tilt — dominant gaze, hunter type.',NEUTRAL:'Neutral canthal tilt — gaze unremarkable.',NEGATIVE:'Negative canthal tilt — passive gaze, prey type.'}[m.canthal_tilt];
-  if(score<4.5)return`Weak bone structure. Main issues: <strong>${wL.join(' and ')}</strong>. ${ct} SMV in the lower zone. Won't change without looksmaxxing.`;
-  if(score<5.5)return`Below average. Plus — <strong>${sL}</strong>. Minus — <strong>${wL.join(' and ')}</strong>. ${ct} "Invisible" zone — not off-putting but not attractive either.`;
-  if(score<6.5)return`Average SMV level. <strong>${sL}</strong> is a real plus. Weaknesses: <strong>${wL.join(' and ')}</strong>. ${ct} Starting point, not the finish.`;
-  if(score<7.5)return`Above average. <strong>${sL}</strong> works for you. <strong>${wL[0]}</strong> holds you back. ${ct} Top 25%. Body and style push you to elite.`;
-  if(score<8.5)return`Strong looks. <strong>${sL}</strong> at a high level. ${ct} Top 10% in facial metrics.`;
-  return`Elite looks. <strong>${sL}</strong> — upper percentile level. Maximize your body to match your face.`;
+  const ct={POSITIVE:'Positive canthal tilt - dominant gaze, hunter type.',NEUTRAL:'Neutral canthal tilt - gaze unremarkable.',NEGATIVE:'Negative canthal tilt - passive gaze, prey type.'}[m.canthal_tilt];
+  if(score<4.5)return'Weak bone structure. Main issues: <strong>'+wL.join(' and ')+'</strong>. '+ct+' SMV in the lower zone.';
+  if(score<5.5)return'Below average. Plus - <strong>'+sL+'</strong>. Minus - <strong>'+wL.join(' and ')+'</strong>. '+ct;
+  if(score<6.5)return'Average SMV level. <strong>'+sL+'</strong> is a real plus. Weaknesses: <strong>'+wL.join(' and ')+'</strong>. '+ct+' Starting point, not the finish.';
+  if(score<7.5)return'Above average. <strong>'+sL+'</strong> works for you. <strong>'+wL[0]+'</strong> holds you back. '+ct+' Top 25%.';
+  if(score<8.5)return'Strong looks. <strong>'+sL+'</strong> at a high level. '+ct+' Top 10%.';
+  return'Elite looks. <strong>'+sL+'</strong> - upper percentile level.';
 }
 
-// ── Tips ──────────────────────────────────────────────────────────
-const TIPS={
-  jaw:['<strong>BODYFAT ↓</strong> — face fat kills jawline. Cutting is priority #1.','<strong>MEWING</strong> — proper tongue posture shapes the palate long-term.','<strong>BEARD</strong> — beard covers a weak chin.','<strong>NECK/TRAPS</strong> — a thick neck makes jawline look sharper.'],
-  chk:['<strong>BODYFAT ↓</strong> — cheekbones only show when you are lean.','<strong>TAN</strong> — reveals cheekbone structure.','<strong>MEWING</strong> — long-term effect on cheekbone structure.'],
-  eye:['<strong>BROWS</strong> — proper shape strengthens the orbital region.','<strong>SLEEP 8h+</strong> — removes puffiness, sharper gaze.','<strong>BODYFAT ↓</strong> — fat around eyes = prey gaze.'],
-  sym:['<strong>CHEW BOTH SIDES</strong> — even muscle load.','<strong>SLEEP ON BACK</strong> — side sleeping deforms the face.','<strong>POSTURE</strong> — bad posture creates asymmetry.'],
-  thirds:['<strong>ORTHODONTICS</strong> — bite shifts proportions.','<strong>MEWING</strong> — affects the middle third long-term.'],
-  nose:['<strong>RHINOPLASTY</strong> — the only way to change the nose.','<strong>VISUAL TRICK</strong> — brows and haircut distract from the nose.'],
-  lips:['<strong>HYDRATION</strong> — dehydrated lips look thinner.','<strong>BODYFAT ↓</strong> — high body fat blurs lip shape.'],
-};
+const TIPS={jaw:['<strong>BODYFAT DOWN</strong> - face fat kills jawline.','<strong>MEWING</strong> - proper tongue posture shapes the palate.','<strong>BEARD</strong> - covers a weak chin.'],chk:['<strong>BODYFAT DOWN</strong> - cheekbones only show when lean.','<strong>TAN</strong> - reveals cheekbone structure.'],eye:['<strong>BROWS</strong> - proper shape strengthens the orbital region.','<strong>SLEEP 8h+</strong> - removes puffiness, sharper gaze.'],sym:['<strong>CHEW BOTH SIDES</strong> - even muscle load.','<strong>SLEEP ON BACK</strong> - side sleeping deforms the face.'],thirds:['<strong>ORTHODONTICS</strong> - bite shifts proportions.','<strong>MEWING</strong> - affects the middle third long-term.'],nose:['<strong>RHINOPLASTY</strong> - the only way to change the nose.'],lips:['<strong>HYDRATION</strong> - dehydrated lips look thinner.']};
+
 function buildTips(raw){
   const order=Object.entries({jaw:raw.jaw,chk:raw.chk,eye:raw.eye,sym:raw.sym,thirds:raw.thirds,nose:raw.nose,lips:raw.lips}).sort((a,b)=>a[1]-b[1]);
   const res=[],used=new Set();
-  for(const[k] of order)for(const t of(TIPS[k]||[]))if(!used.has(t)){used.add(t);res.push(t);if(res.length>=4)return res;break;}
+  for(const[k]of order)for(const t of(TIPS[k]||[]))if(!used.has(t)){used.add(t);res.push(t);if(res.length>=4)return res;break;}
   return res;
 }
 
 const getTier=s=>s<4?{l:'SUBHUMAN',c:'#7b1e14'}:s<5?{l:'BELOW AVERAGE',c:'#c0392b'}:s<6?{l:'AVERAGE',c:'#e67e22'}:s<7?{l:'ABOVE AVERAGE',c:'#f1c40f'}:s<8?{l:'HIGH TIER',c:'#27ae60'}:s<9?{l:'CHAD',c:'#00ff41'}:{l:'GIGACHAD',c:'#00ff41'};
 
-// ── Render ────────────────────────────────────────────────────────
 function renderResults(result,verdict,tips){
   $('res-sec').style.display='block';
   const{score,metrics,raw}=result;
@@ -746,43 +329,26 @@ function renderResults(result,verdict,tips){
   sEl.className='sn '+(score<5?'lo':score<6.5?'mi':score<8?'hi':'tp');
   const{l,c}=getTier(score);
   $('tb').textContent=l;$('tb').style.color=$('tb').style.borderColor=c;
-
-  const DEFS=[
-    {lb:'SYMMETRY',k:'symmetry',u:'%'},{lb:'CANTHAL TILT',k:'canthal_tilt',tx:1},
-    {lb:'JAWLINE',k:'jawline',u:'%'},{lb:'CHEEKBONES',k:'cheekbones',u:'%'},
-    {lb:'EYE REGION',k:'eye_region',u:'%'},{lb:'FACIAL PROPORTIONS',k:'facial_thirds',u:'%'},
-    {lb:'NOSE',k:'nose',u:'%'},{lb:'LIPS',k:'lips',u:'%'},
-  ];
+  const DEFS=[{lb:'SYMMETRY',k:'symmetry',u:'%'},{lb:'CANTHAL TILT',k:'canthal_tilt',tx:1},{lb:'JAWLINE',k:'jawline',u:'%'},{lb:'CHEEKBONES',k:'cheekbones',u:'%'},{lb:'EYE REGION',k:'eye_region',u:'%'},{lb:'FACIAL PROPORTIONS',k:'facial_thirds',u:'%'},{lb:'NOSE',k:'nose',u:'%'},{lb:'LIPS',k:'lips',u:'%'}];
   const grid=$('mg');grid.innerHTML='';
   DEFS.forEach(d=>{
     const v=metrics[d.k],cell=document.createElement('div');cell.className='mc';
-    if(d.tx){cell.innerHTML=`<div class="ml">${d.lb}</div><div class="mv">${v}</div>`;}
-    else{const fc=v>=70?'gt':v>=50?'gd':'';cell.innerHTML=`<div class="ml">${d.lb}</div><div class="mv">${v}${d.u}</div><div class="mb"><div class="mf ${fc}" style="width:0%" data-p="${v}"></div></div>`;}
+    if(d.tx){cell.innerHTML='<div class="ml">'+d.lb+'</div><div class="mv">'+v+'</div>';}
+    else{const fc=v>=70?'gt':v>=50?'gd':'';cell.innerHTML='<div class="ml">'+d.lb+'</div><div class="mv">'+v+d.u+'</div><div class="mb"><div class="mf '+fc+'" style="width:0%" data-p="'+v+'"></div></div>';}
     grid.appendChild(cell);
   });
   $('vt').innerHTML=verdict;
-  $('ll').innerHTML=tips.map(t=>`<li>${t}</li>`).join('');
+  $('ll').innerHTML=tips.map(t=>'<li>'+t+'</li>').join('');
   const pot=parseFloat(clamp((100-(raw.jaw+raw.chk+raw.eye)/3)/40,0.5,3.0).toFixed(1));
   $('pn').textContent='+'+pot.toFixed(1);
-  setTimeout(()=>{
-    document.querySelectorAll('.mf').forEach(el=>el.style.width=el.dataset.p+'%');
-    $('pf').style.width=Math.min(pot/3*100,100)+'%';
-  },300);
-
-  // Debug output - show in alert so we definitely see it
-  if(result.debug){
-    alert('RAW DEBUG:\n'+result.debug.join('\n'));
-  }
-
+  setTimeout(()=>{document.querySelectorAll('.mf').forEach(el=>el.style.width=el.dataset.p+'%');$('pf').style.width=Math.min(pot/3*100,100)+'%';},300);
   $('res-sec').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 $('rb').addEventListener('click',()=>{
   $('res-sec').style.display='none';
   $('lm-sec').style.display='none';
-  // Clear landmark dots
-  const imgWrap=$('lm-img-wrap');
-  imgWrap.querySelectorAll('.lm-dot').forEach(el=>el.remove());
+  $('lm-img-wrap').querySelectorAll('.lm-dot').forEach(el=>el.remove());
   $('ov').getContext('2d').clearRect(0,0,9999,9999);
   $('up-sec').style.display='block';
   $('fi').value='';
@@ -791,12 +357,8 @@ $('rb').addEventListener('click',()=>{
   originalLandmarks=null;
 });
 
-// ── Boot ──────────────────────────────────────────────────────────
 window.addEventListener('load',()=>{
-  if(typeof FaceMesh==='undefined'){
-    $('st').textContent='SCRIPT ERR — refresh the page';
-    return;
-  }
+  if(typeof FaceMesh==='undefined'){$('st').textContent='SCRIPT ERR - refresh';return;}
   initMediaPipe();
 });
 </script>

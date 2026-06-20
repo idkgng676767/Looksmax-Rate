@@ -351,98 +351,111 @@ const KEY_LANDMARKS=[
 ];
 
 function computeMetrics(lm){
+  // Get 2D point from landmark index
   const p=i=>({x:lm[i].x,y:lm[i].y});
-  const D2=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+  const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 
-  const faceW=D2(p(LM.jawLeft),p(LM.jawRight));
-  const faceH=D2(p(LM.foreheadTop),p(LM.chin));
+  // ── HEAD TILT COMPENSATION ──────────────────────────
+  // Compute head roll from eye positions, then rotate all points
+  // so the face is upright. This fixes symmetry and tilt metrics
+  // for photos where the head is slightly tilted.
+  const le=p(LM.leftEyeOuter), re=p(LM.rightEyeOuter);
+  const eyeAngle=Math.atan2(re.y-le.y, re.x-le.x); // radians of eye line from horizontal
+  const cosA=Math.cos(-eyeAngle), sinA=Math.sin(-eyeAngle);
+  // Rotate around midpoint of eyes
+  const eyeMid={x:(le.x+re.x)/2, y:(le.y+re.y)/2};
+  const rp=i=>{
+    const pt=p(i);
+    const dx=pt.x-eyeMid.x, dy=pt.y-eyeMid.y;
+    return {x:dx*cosA-dy*sinA+eyeMid.x, y:dx*sinA+dy*cosA+eyeMid.y};
+  };
+
+  const faceW=dist(rp(LM.jawLeft),rp(LM.jawRight));
+  const faceH=dist(rp(LM.foreheadTop),rp(LM.chin));
 
   // ── JAWLINE ──────────────────────────────────────────
-  // Ratio of face height to face width (lower = more square/jawed)
   const fRatio=faceH/faceW;
-  // Ideal ratio ~1.25-1.45 (square face), penalize very long faces
-  const jaw=clamp(Math.round(55+(fRatio-1.0)*50),22,96);
+  // ideal ~1.25-1.45 (square), penalize very long faces <1.15 or >1.6
+  const jaw=clamp(Math.round(90-Math.abs(fRatio-1.35)*60),22,96);
 
   // ── SYMMETRY ─────────────────────────────────────────
-  // Compare left/right point distances to nose bridge, normalized by faceW
-  const nb=p(LM.noseBridge);
-  const symPairs=[
-    [LM.leftEyeOuter,LM.rightEyeOuter],
-    [LM.leftEyeInner,LM.rightEyeInner],
-    [LM.leftBrowOuter,LM.rightBrowOuter],
-    [LM.leftBrowInner,LM.rightBrowInner],
-    [LM.noseLeft,LM.noseRight],
-    [LM.lipLeft,LM.lipRight],
-    [LM.jawLeft,LM.jawRight],
-    [LM.cheekLeft,LM.cheekRight],
-  ];
-  // asymAvg is ~0.005-0.03 for normal faces
-  const asymAvg=symPairs.reduce((s,[l,r])=>s+Math.abs(D2(p(l),nb)-D2(p(r),nb))/faceW,0)/symPairs.length;
-  // 0.005→93, 0.01→85, 0.02→70, 0.04→40
-  const sym=clamp(Math.round(100-Math.pow(asymAvg,0.7)*420),25,98);
+  // Measure y-axis symmetry: for each pair, compare x-distance to center line
+  const nb=rp(LM.noseBridge);
+  const centerX=nb.x;
+  const symPairs=[[LM.leftEyeOuter,LM.rightEyeOuter],[LM.leftEyeInner,LM.rightEyeInner],[LM.leftBrowOuter,LM.rightBrowOuter],[LM.leftBrowInner,LM.rightBrowInner],[LM.noseLeft,LM.noseRight],[LM.lipLeft,LM.lipRight],[LM.jawLeft,LM.jawRight],[LM.cheekLeft,LM.cheekRight]];
+  // After rotation, symmetry = how well left/right x match around center
+  const symDevs=symPairs.map(([l,r])=>{
+    const lp=rp(l), rp2=rp(r);
+    // Ideal: lp.x and rp2.x are equidistant from centerX
+    const idealRx=2*centerX-lp.x;
+    return Math.abs(rp2.x-idealRx)/faceW;
+  });
+  const symAvg=symDevs.reduce((a,b)=>a+b,0)/symDevs.length;
+  // symAvg ~0.01-0.04 for normal faces post-rotation
+  // 0→100, 0.02→80, 0.04→60, 0.08→20
+  const sym=clamp(Math.round(100-symAvg*2500),30,98);
 
   // ── CANTHAL TILT ─────────────────────────────────────
-  const lTilt=p(LM.leftEyeOuter).y-p(LM.leftEyeInner).y;
-  const rTilt=p(LM.rightEyeOuter).y-p(LM.rightEyeInner).y;
-  const eyeRefW=D2(p(LM.leftEyeOuter),p(LM.leftEyeInner));
-  const tR=((lTilt+rTilt)/2)/eyeRefW;
+  // After rotation, outer eye should be higher (smaller y) than inner for positive tilt
+  const lOuter=rp(LM.leftEyeOuter), lInner=rp(LM.leftEyeInner);
+  const rOuter=rp(LM.rightEyeOuter), rInner=rp(LM.rightEyeInner);
+  const lTilt=lOuter.y-lInner.y; // negative = positive tilt (outer higher)
+  const rTilt=rOuter.y-rInner.y;
+  const lEW=dist(lOuter,lInner), rEW=dist(rOuter,rInner);
+  const tR=((lTilt/lEW)+(rTilt/rEW))/2;
   let cLabel,cScore;
-  if(tR<-0.06){cLabel='POSITIVE';cScore=85;}
-  else if(tR<0.04){cLabel='NEUTRAL';cScore=72;}
+  if(tR<-0.05){cLabel='POSITIVE';cScore=85;}
+  else if(tR<0.03){cLabel='NEUTRAL';cScore=72;}
   else{cLabel='NEGATIVE';cScore=48;}
 
   // ── CHEEKBONES ───────────────────────────────────────
-  // cheekW/jawW ratio: higher = wider cheekbones relative to jaw (good)
-  const cheekW=D2(p(LM.cheekLeft),p(LM.cheekRight));
-  const jawW=D2(p(LM.jawMidLeft),p(LM.jawMidRight));
+  const cheekW=dist(rp(LM.cheekLeft),rp(LM.cheekRight));
+  const jawW=dist(rp(LM.jawMidLeft),rp(LM.jawMidRight));
   const cRatio=cheekW/jawW;
-  // Normal range 0.9-1.2, ideal ~1.05-1.15
-  const chk=clamp(Math.round(45+(cRatio-0.85)*60),18,94);
+  // ideal 1.0-1.15, normal range 0.85-1.25
+  const chk=clamp(Math.round(45+(cRatio-0.85)*55),18,94);
 
   // ── EYE REGION ───────────────────────────────────────
-  // Eye aspect ratio (height/width): normal ~0.25-0.45
-  const lEH=D2(p(LM.leftEyeTop),p(LM.leftEyeBot));
-  const lEW=D2(p(LM.leftEyeOuter),p(LM.leftEyeInner));
-  const rEH=D2(p(LM.rightEyeTop),p(LM.rightEyeBot));
-  const rEW=D2(p(LM.rightEyeOuter),p(LM.rightEyeInner));
+  const lEH=dist(rp(LM.leftEyeTop),rp(LM.leftEyeBot));
+  const rEH=dist(rp(LM.rightEyeTop),rp(LM.rightEyeBot));
   const eR=(lEH/lEW+rEH/rEW)/2;
-  // 0.2→75, 0.3→88, 0.4→82, 0.5→65
-  const eye=clamp(Math.round(-180*Math.pow(eR-0.32,2)+90),18,94);
+  // Normal eye aspect ratio ~0.2-0.45. Peak score at ~0.3
+  // 0.15→62, 0.25→85, 0.3→90, 0.4→78, 0.5→55
+  const eye=clamp(Math.round(-200*Math.pow(eR-0.3,2)+90),18,94);
 
   // ── FACIAL THIRDS ────────────────────────────────────
-  // y increases downward in MediaPipe
-  const bY=(p(LM.leftBrowInner).y+p(LM.rightBrowInner).y)/2;
-  const nY=p(LM.noseTip).y;
-  const cY=p(LM.chin).y;
-  const tY=p(LM.foreheadTop).y;
-  const t1=bY-tY, t2=nY-bY, t3=cY-nY;
-  const tot=t1+t2+t3, id=tot/3;
-  // thirdsDev: 0=perfect, ~0.15=normal, 0.3+=unbalanced
-  const thirdsDev=(Math.abs(t1-id)+Math.abs(t2-id)+Math.abs(t3-id))/tot;
-  // 0→100, 0.1→82, 0.15→73, 0.2→64, 0.3→46
-  const thirds=clamp(Math.round(100-thirdsDev*260),35,96);
+  // After rotation, y increases downward. All thirds should be ~equal.
+  const browY=(rp(LM.leftBrowInner).y+rp(LM.rightBrowInner).y)/2;
+  const noseY=rp(LM.noseTip).y;
+  const chinY=rp(LM.chin).y;
+  const foreheadY=rp(LM.foreheadTop).y;
+  const t1=browY-foreheadY, t2=noseY-browY, t3=chinY-noseY;
+  const tot=t1+t2+t3, ideal=tot/3;
+  const thirdsDev=(Math.abs(t1-ideal)+Math.abs(t2-ideal)+Math.abs(t3-ideal))/tot;
+  // 0→100, 0.1→85, 0.15→78, 0.2→70, 0.3→55
+  const thirds=clamp(Math.round(100-thirdsDev*170),40,96);
 
   // ── NOSE ─────────────────────────────────────────────
-  // noseW/ieW: normal ~0.8-1.4, ideal ~1.0-1.2
-  const noseW=D2(p(LM.noseLeft),p(LM.noseRight));
-  const ieW=D2(p(LM.leftEyeInner),p(LM.rightEyeInner));
+  const noseW=dist(rp(LM.noseLeft),rp(LM.noseRight));
+  const ieW=dist(rp(LM.leftEyeInner),rp(LM.rightEyeInner));
   const nRatio=noseW/ieW;
-  // 0.8→76, 1.0→100, 1.2→100, 1.5→64
-  const nose=clamp(Math.round(100-Math.pow(nRatio-1.1,2)*350),30,96);
+  // ideal 0.9-1.3 (nose slightly narrower to slightly wider than eye spacing)
+  // 0.7→77, 0.9→95, 1.1→100, 1.3→95, 1.6→64
+  const nose=clamp(Math.round(100-Math.pow(nRatio-1.1,2)*280),30,96);
 
   // ── LIPS ─────────────────────────────────────────────
-  // Upper/lower lip ratio: ideal ~0.5-0.7 (lower lip slightly fuller)
-  const upH=D2(p(LM.lipTop),p(LM.lipUpperMid));
-  const loH=D2(p(LM.lipBot),p(LM.lipLowerMid));
+  const upH=dist(rp(LM.lipTop),rp(LM.lipUpperMid));
+  const loH=dist(rp(LM.lipBot),rp(LM.lipLowerMid));
   const lipRatio=upH/(loH+0.0001);
-  // 0.4→76, 0.6→100, 0.8→76, 1.0→52
-  const lips=clamp(Math.round(100-Math.pow(lipRatio-0.6,2)*600),20,94);
+  // ideal 0.5-0.7 (lower lip fuller)
+  // 0.3→61, 0.5→95, 0.6→100, 0.7→95, 1.0→56
+  const lips=clamp(Math.round(100-Math.pow(lipRatio-0.6,2)*450),20,94);
 
   // ── FINAL SCORE ──────────────────────────────────────
   const w=jaw*0.21+sym*0.18+cScore*0.17+chk*0.14+eye*0.12+thirds*0.10+nose*0.05+lips*0.03;
-  // w ranges ~20-95. Map to 1-10 scale.
-  // w=45→~4.8, w=55→~5.7, w=65→~6.6, w=75→~7.5, w=85→~8.4
-  const score=parseFloat(clamp(w*0.078+1.3,2.0,9.7).toFixed(1));
+  // w ranges ~25-95. Map to 1-10.
+  // w=40→4.5, w=50→5.3, w=60→6.1, w=70→6.9, w=80→7.7, w=90→8.5
+  const score=parseFloat(clamp(w*0.084+1.1,2.0,9.7).toFixed(1));
 
   return{score,
     metrics:{jawline:Math.round(jaw),symmetry:Math.round(sym),canthal_tilt:cLabel,

@@ -269,7 +269,9 @@ function computeMetrics(lm){
   let symTotal=0;
   for(const[l,r]of pairs){const a=rp(l),b=rp(r);symTotal+=Math.abs(b.x-(2*nb.x-a.x));}
   const symNorm=(symTotal/pairs.length)/faceW;
-  const sym=clamp(Math.round(100-symNorm*800),25,98);
+  // symNorm: 0=perfect. Normal faces ~0.02-0.06 after rotation.
+  // Very gentle: 0→100, 0.03→88, 0.06→76, 0.1→58, 0.15→35
+  const sym=clamp(Math.round(100-symNorm*400),30,98);
 
   // CANTHAL TILT
   const lO=rp(LM.leftEyeOuter),lI=rp(LM.leftEyeInner);
@@ -303,7 +305,7 @@ function computeMetrics(lm){
   const noseW=D(rp(LM.noseLeft),rp(LM.noseRight));
   const ieW=D(rp(LM.leftEyeInner),rp(LM.rightEyeInner));
   const nRatio=noseW/ieW;
-  const nose=clamp(Math.round(100-Math.pow(nRatio-1.1,2)*180),25,96);
+  const nose=clamp(Math.round(100-Math.pow(nRatio-1.1,2)*120),30,96);
 
   // LIPS
   const upH=D(rp(LM.lipTop),rp(LM.lipUpperMid));
@@ -542,11 +544,6 @@ function renderResults(result,verdict,tips){
   const pot=parseFloat(clamp((100-(raw.jaw+raw.chk+raw.eye)/3)/40,0.5,3.0).toFixed(1));
   $('pn').textContent='+'+pot.toFixed(1);
   setTimeout(()=>{document.querySelectorAll('.mf').forEach(el=>el.style.width=el.dataset.p+'%');$('pf').style.width=Math.min(pot/3*100,100)+'%';},300);
-
-  // Debug: show raw metric scores below verdict
-  const dbg='<div style="font-size:.55rem;color:#444;margin-top:12px;padding:8px 12px;border:1px solid #1a1a1a;background:#0a0a0a;white-space:pre-wrap;line-height:1.7;font-family:monospace;">DEBUG RAW: jaw='+raw.jaw+' sym='+raw.sym+' canthal='+raw.cScore+' chk='+raw.chk+' eye='+raw.eye+' thirds='+raw.thirds+' nose='+raw.nose+' lips='+raw.lips+'</div>';
-  $('vt').innerHTML+=dbg;
-
   $('res-sec').scrollIntoView({behavior:'smooth',block:'start'});
 }
 

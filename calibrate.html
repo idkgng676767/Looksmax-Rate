@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html><head><title>Calibrate</title></head>
+<body style="background:#000;color:#0f0;font-family:monospace;padding:20px;white-space:pre;">
+<h2 style="color:#f00">LANDMARK CALIBRATION</h2>
+<img id="img" style="max-width:300px;display:block;margin:10px 0;">
+<div id="out"></div>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+<script>
+const LM={jawLeft:234,jawRight:454,chin:152,jawMidLeft:172,jawMidRight:397,leftEyeOuter:33,leftEyeInner:133,leftEyeTop:159,leftEyeBot:145,rightEyeOuter:362,rightEyeInner:263,rightEyeTop:386,rightEyeBot:374,noseTip:1,noseLeft:129,noseRight:358,noseBridge:6,leftBrowOuter:70,leftBrowInner:107,rightBrowOuter:300,rightBrowInner:336,lipTop:13,lipBot:14,lipLeft:61,lipRight:291,lipUpperMid:12,lipLowerMid:15,cheekLeft:116,cheekRight:345,foreheadTop:10};
+
+const out=document.getElementById('out');
+function log(s){out.textContent+=s+'\n';}
+
+const faceMesh=new FaceMesh({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}`});
+faceMesh.setOptions({maxNumFaces:1,refineLandmarks:false,minDetectionConfidence:0.3,minTrackingConfidence:0.3});
+faceMesh.onResults(results=>{
+  if(!results.multiFaceLandmarks||!results.multiFaceLandmarks.length){log('NO FACE DETECTED');return;}
+  const lm=results.multiFaceLandmarks[0];
+  const p=i=>({x:lm[i].x,y:lm[i].y});
+  const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+
+  // Head tilt
+  const le=p(LM.leftEyeOuter), re=p(LM.rightEyeOuter);
+  const eyeAngle=Math.atan2(re.y-le.y,re.x-le.x);
+  const cosA=Math.cos(-eyeAngle), sinA=Math.sin(-eyeAngle);
+  const eyeMid={x:(le.x+re.x)/2,y:(le.y+re.y)/2};
+  const rp=i=>{const pt=p(i);const dx=pt.x-eyeMid.x,dy=pt.y-eyeMid.y;return {x:dx*cosA-dy*sinA+eyeMid.x,y:dx*sinA+dy*cosA+eyeMid.y};};
+
+  const faceW=dist(rp(LM.jawLeft),rp(LM.jawRight));
+  const faceH=dist(rp(LM.foreheadTop),rp(LM.chin));
+
+  log('=== HEAD TILT ===');
+  log('eyeAngle: '+(eyeAngle*180/Math.PI).toFixed(2)+' deg');
+  log('faceW: '+faceW.toFixed(5)+'  faceH: '+faceH.toFixed(5)+'  fRatio: '+(faceH/faceW).toFixed(4));
+
+  // Symmetry
+  const nb=rp(LM.noseBridge);
+  const pairs=[['eyeOuter',LM.leftEyeOuter,LM.rightEyeOuter],['eyeInner',LM.leftEyeInner,LM.rightEyeInner],['browOuter',LM.leftBrowOuter,LM.rightBrowOuter],['browInner',LM.leftBrowInner,LM.rightBrowInner],['nose',LM.noseLeft,LM.noseRight],['lip',LM.lipLeft,LM.lipRight],['jaw',LM.jawLeft,LM.jawRight],['cheek',LM.cheekLeft,LM.cheekRight]];
+  log('\n=== SYMMETRY (post-rotation) ===');
+  let symSum=0;
+  pairs.forEach(([name,l,r])=>{
+    const a=rp(l),b=rp(r);
+    const idealRx=2*nb.x-a.x;
+    const dev=Math.abs(b.x-idealRx);
+    const devPct=(dev/faceW*100).toFixed(2);
+    log(name+': L.x='+a.x.toFixed(4)+' R.x='+b.x.toFixed(4)+' idealR='+idealRx.toFixed(4)+' dev='+dev.toFixed(5)+' ('+devPct+'% of faceW)');
+    symSum+=dev/faceW;
+  });
+  const symAvg=symSum/pairs.length;
+  log('symAvg: '+(symAvg*100).toFixed(2)+'% of faceW');
+
+  // Canthal tilt
+  const lO=rp(LM.leftEyeOuter),lI=rp(LM.leftEyeInner);
+  const rO=rp(LM.rightEyeOuter),rI=rp(LM.rightEyeInner);
+  const lEW=dist(lO,lI),rEW=dist(rO,rI);
+  const lTilt=lO.y-lI.y, rTilt=rO.y-rI.y;
+  const tR=((lTilt/lEW)+(rTilt/rEW))/2;
+  log('\n=== CANTHAL TILT ===');
+  log('L: outer.y='+lO.y.toFixed(4)+' inner.y='+lI.y.toFixed(4)+' tilt='+lTilt.toFixed(5)+' EW='+lEW.toFixed(5)+' norm='+(lTilt/lEW).toFixed(5));
+  log('R: outer.y='+rO.y.toFixed(4)+' inner.y='+rI.y.toFixed(4)+' tilt='+rTilt.toFixed(5)+' EW='+rEW.toFixed(5)+' norm='+(rTilt/rEW).toFixed(5));
+  log('tR avg: '+tR.toFixed(5));
+
+  // Eye aspect ratio
+  const lEH=dist(rp(LM.leftEyeTop),rp(LM.leftEyeBot));
+  const rEH=dist(rp(LM.rightEyeTop),rp(LM.rightEyeBot));
+  const eR=(lEH/lEW+rEH/rEW)/2;
+  log('\n=== EYE ===');
+  log('L: EH='+lEH.toFixed(5)+' EW='+lEW.toFixed(5)+' ratio='+(lEH/lEW).toFixed(4));
+  log('R: EH='+rEH.toFixed(5)+' EW='+rEW.toFixed(5)+' ratio='+(rEH/rEW).toFixed(4));
+  log('avg eR: '+eR.toFixed(4));
+
+  // Cheekbones
+  const cheekW=dist(rp(LM.cheekLeft),rp(LM.cheekRight));
+  const jawW=dist(rp(LM.jawMidLeft),rp(LM.jawMidRight));
+  log('\n=== CHEEKBONES ===');
+  log('cheekW: '+cheekW.toFixed(5)+' jawW: '+jawW.toFixed(5)+(' cRatio: '+(cheekW/jawW).toFixed(4)));
+
+  // Facial thirds
+  const browY=(rp(LM.leftBrowInner).y+rp(LM.rightBrowInner).y)/2;
+  const noseY=rp(LM.noseTip).y, chinY=rp(LM.chin).y, foreheadY=rp(LM.foreheadTop).y;
+  const t1=browY-foreheadY, t2=noseY-browY, t3=chinY-noseY;
+  const tot=t1+t2+t3, ideal=tot/3;
+  const thirdsDev=(Math.abs(t1-ideal)+Math.abs(t2-ideal)+Math.abs(t3-ideal))/tot;
+  log('\n=== FACIAL THIRDS ===');
+  log('forehead='+foreheadY.toFixed(4)+' brow='+browY.toFixed(4)+' nose='+noseY.toFixed(4)+' chin='+chinY.toFixed(4));
+  log('t1='+t1.toFixed(5)+' t2='+t2.toFixed(5)+' t3='+t3.toFixed(5)+' tot='+tot.toFixed(5)+' ideal='+ideal.toFixed(5));
+  log('thirdsDev: '+thirdsDev.toFixed(5));
+
+  // Nose
+  const noseW=dist(rp(LM.noseLeft),rp(LM.noseRight));
+  const ieW=dist(rp(LM.leftEyeInner),rp(LM.rightEyeInner));
+  log('\n=== NOSE ===');
+  log('noseW: '+noseW.toFixed(5)+' ieW: '+ieW.toFixed(5)+' nRatio: '+(noseW/ieW).toFixed(4));
+
+  // Lips
+  const upH=dist(rp(LM.lipTop),rp(LM.lipUpperMid));
+  const loH=dist(rp(LM.lipBot),rp(LM.lipLowerMid));
+  log('\n=== LIPS ===');
+  log('upH: '+upH.toFixed(5)+' loH: '+loH.toFixed(5)+(' lipRatio: '+(upH/loH).toFixed(4)));
+
+  // Raw landmark dump for key points
+  log('\n=== RAW LANDMARKS (pre-rotation) ===');
+  [33,133,362,263,159,145,386,374,1,129,358,6,10,152,116,345,61,291,13,14].forEach(i=>{
+    const pt=p(i);
+    log('LM['+i+']: x='+pt.x.toFixed(4)+' y='+pt.y.toFixed(4)+' z='+(pt.z||0).toFixed(4));
+  });
+});
+
+const img=document.getElementById('img');
+img.onload=()=>faceMesh.send({image:img});
+img.src='/Users/arjundhillon/Downloads/.tmppp/asd.jpg';
+</script>
+</body></html>

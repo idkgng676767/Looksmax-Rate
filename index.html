@@ -382,8 +382,9 @@ function computeMetrics(lm){
     return Math.abs(b.x-idealRx)/faceW;
   });
   const symAvg=symDevs.reduce((a,b)=>a+b,0)/symDevs.length;
-  // symAvg post-rotation: 0.005→88, 0.01→76, 0.02→52, 0.04→4
-  const sym=clamp(Math.round(100-Math.pow(symAvg,0.8)*1800),30,98);
+  // symAvg is deviation/faceW ratio. Normal: 0.01-0.03.
+  // 0→100, 0.01→85, 0.02→70, 0.03→55, 0.05→25
+  const sym=clamp(Math.round(100-symAvg*1500),30,98);
 
   // ── CANTHAL TILT ─────────────────────────────────────
   const lOuter=rp(LM.leftEyeOuter), lInner=rp(LM.leftEyeInner);
@@ -417,13 +418,15 @@ function computeMetrics(lm){
   const t1=browY-foreheadY, t2=noseY-browY, t3=chinY-noseY;
   const tot=t1+t2+t3, ideal=tot/3;
   const thirdsDev=(Math.abs(t1-ideal)+Math.abs(t2-ideal)+Math.abs(t3-ideal))/tot;
-  const thirds=clamp(Math.round(100-thirdsDev*160),40,96);
+  // 0→100, 0.1→90, 0.15→85, 0.2→80, 0.3→70
+  const thirds=clamp(Math.round(100-thirdsDev*100),40,96);
 
   // ── NOSE ─────────────────────────────────────────────
   const noseW=dist(rp(LM.noseLeft),rp(LM.noseRight));
   const ieW=dist(rp(LM.leftEyeInner),rp(LM.rightEyeInner));
   const nRatio=noseW/ieW;
-  const nose=clamp(Math.round(100-Math.pow(nRatio-1.1,2)*250),30,96);
+  // ideal 0.8-1.4. 0.7→84, 0.9→97, 1.1→100, 1.3→97, 1.5→84, 1.8→58
+  const nose=clamp(Math.round(100-Math.pow(nRatio-1.1,2)*200),30,96);
 
   // ── LIPS ─────────────────────────────────────────────
   const upH=dist(rp(LM.lipTop),rp(LM.lipUpperMid));
@@ -437,19 +440,19 @@ function computeMetrics(lm){
 
   // ── DEBUG raw values ────────────────────────────────
   const _dbg=[];
-  _dbg.push('eyeAngle: '+(eyeAngle*180/Math.PI).toFixed(1)+'°');
+  _dbg.push('eyeAngle: '+(eyeAngle*180/Math.PI).toFixed(1)+' deg');
   _dbg.push('faceW: '+faceW.toFixed(4)+' faceH: '+faceH.toFixed(4)+' fRatio: '+fRatio.toFixed(3));
-  _dbg.push('symAvg: '+(symAvg*100).toFixed(2)+'%');
+  _dbg.push('symAvg: '+(symAvg*100).toFixed(2)+'% of faceW');
+  _dbg.push('symDevs(%): '+symDevs.map(v=>(v*100).toFixed(1)).join(','));
   _dbg.push('tR: '+tR.toFixed(4));
   _dbg.push('eR: '+eR.toFixed(3));
   _dbg.push('cRatio: '+cRatio.toFixed(3));
-  _dbg.push('thirdsDev: '+thirdsDev.toFixed(3));
+  _dbg.push('thirdsDev: '+thirdsDev.toFixed(3)+' t1:'+t1.toFixed(3)+' t2:'+t2.toFixed(3)+' t3:'+t3.toFixed(3));
   _dbg.push('nRatio: '+nRatio.toFixed(3));
   _dbg.push('lipRatio: '+lipRatio.toFixed(3));
   _dbg.push('---SCORES---');
-  _dbg.push('jaw: '+jaw+' sym: '+sym+' canthal: '+cScore+' chk: '+chk);
-  _dbg.push('eye: '+eye+' thirds: '+thirds+' nose: '+nose+' lips: '+lips);
-  _dbg.push('weighted w: '+w.toFixed(1)+' → score: '+score);
+  _dbg.push('jaw:'+jaw+' sym:'+sym+' canthal:'+cScore+' chk:'+chk+' eye:'+eye+' thirds:'+thirds+' nose:'+nose+' lips:'+lips);
+  _dbg.push('w:'+w.toFixed(1)+' score:'+score);
 
   return{score,
     metrics:{jawline:Math.round(jaw),symmetry:Math.round(sym),canthal_tilt:cLabel,

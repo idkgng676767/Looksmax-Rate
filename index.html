@@ -352,17 +352,19 @@ const KEY_LANDMARKS=[
 
 function computeMetrics(lm){
   const p=i=>({x:lm[i].x,y:lm[i].y});
+  const D2=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 
-  const faceW=D(p(LM.jawLeft),p(LM.jawRight));
-  const faceH=D(p(LM.foreheadTop),p(LM.chin));
+  const faceW=D2(p(LM.jawLeft),p(LM.jawRight));
+  const faceH=D2(p(LM.foreheadTop),p(LM.chin));
 
-  const jawMid=M(p(LM.jawMidLeft),p(LM.jawMidRight));
-  const chinDrop=D(p(LM.chin),jawMid);
-  const jawW=D(p(LM.jawMidLeft),p(LM.jawMidRight));
-  const jawwRatio=chinDrop/jawW; // higher = more defined jaw
-  const jawFaceRatio=jawW/faceW; // lower = more tapered (good), higher = rounder
-  const jaw=clamp(jawwRatio*150 - jawFaceRatio*25 + 55, 20, 96);
+  // ── JAWLINE ──────────────────────────────────────────
+  // Ratio of face height to face width (lower = more square/jawed)
+  const fRatio=faceH/faceW;
+  // Ideal ratio ~1.25-1.45 (square face), penalize very long faces
+  const jaw=clamp(Math.round(55+(fRatio-1.0)*50),22,96);
 
+  // ── SYMMETRY ─────────────────────────────────────────
+  // Compare left/right point distances to nose bridge, normalized by faceW
   const nb=p(LM.noseBridge);
   const symPairs=[
     [LM.leftEyeOuter,LM.rightEyeOuter],
@@ -374,49 +376,73 @@ function computeMetrics(lm){
     [LM.jawLeft,LM.jawRight],
     [LM.cheekLeft,LM.cheekRight],
   ];
-  const asymAvg=symPairs.reduce((s,[l,r])=>s+Math.abs(D(p(l),nb)-D(p(r),nb))/faceW,0)/symPairs.length;
-  const sym=clamp(100-asymAvg*120,25,98);
+  // asymAvg is ~0.005-0.03 for normal faces
+  const asymAvg=symPairs.reduce((s,[l,r])=>s+Math.abs(D2(p(l),nb)-D2(p(r),nb))/faceW,0)/symPairs.length;
+  // 0.005→93, 0.01→85, 0.02→70, 0.04→40
+  const sym=clamp(Math.round(100-Math.pow(asymAvg,0.7)*420),25,98);
 
+  // ── CANTHAL TILT ─────────────────────────────────────
   const lTilt=p(LM.leftEyeOuter).y-p(LM.leftEyeInner).y;
   const rTilt=p(LM.rightEyeOuter).y-p(LM.rightEyeInner).y;
-  const eyeRefW=D(p(LM.leftEyeOuter),p(LM.leftEyeInner));
+  const eyeRefW=D2(p(LM.leftEyeOuter),p(LM.leftEyeInner));
   const tR=((lTilt+rTilt)/2)/eyeRefW;
   let cLabel,cScore;
-  if(tR<-0.06){cLabel='POSITIVE';cScore=82;}
+  if(tR<-0.06){cLabel='POSITIVE';cScore=85;}
   else if(tR<0.04){cLabel='NEUTRAL';cScore=72;}
-  else{cLabel='NEGATIVE';cScore=50;}
+  else{cLabel='NEGATIVE';cScore=48;}
 
-  const cheekW=D(p(LM.cheekLeft),p(LM.cheekRight));
-  const chk=clamp((cheekW/jawW-0.95)*250+40,12,92);
+  // ── CHEEKBONES ───────────────────────────────────────
+  // cheekW/jawW ratio: higher = wider cheekbones relative to jaw (good)
+  const cheekW=D2(p(LM.cheekLeft),p(LM.cheekRight));
+  const jawW=D2(p(LM.jawMidLeft),p(LM.jawMidRight));
+  const cRatio=cheekW/jawW;
+  // Normal range 0.9-1.2, ideal ~1.05-1.15
+  const chk=clamp(Math.round(45+(cRatio-0.85)*60),18,94);
 
-  const lEH=D(p(LM.leftEyeTop),p(LM.leftEyeBot));
-  const lEW=D(p(LM.leftEyeOuter),p(LM.leftEyeInner));
-  const rEH=D(p(LM.rightEyeTop),p(LM.rightEyeBot));
-  const rEW=D(p(LM.rightEyeOuter),p(LM.rightEyeInner));
+  // ── EYE REGION ───────────────────────────────────────
+  // Eye aspect ratio (height/width): normal ~0.25-0.45
+  const lEH=D2(p(LM.leftEyeTop),p(LM.leftEyeBot));
+  const lEW=D2(p(LM.leftEyeOuter),p(LM.leftEyeInner));
+  const rEH=D2(p(LM.rightEyeTop),p(LM.rightEyeBot));
+  const rEW=D2(p(LM.rightEyeOuter),p(LM.rightEyeInner));
   const eR=(lEH/lEW+rEH/rEW)/2;
-  const eye=clamp(eR<0.25?78-(0.25-eR)*250:eR<0.35?80:108-eR*220,15,94);
+  // 0.2→75, 0.3→88, 0.4→82, 0.5→65
+  const eye=clamp(Math.round(-180*Math.pow(eR-0.32,2)+90),18,94);
 
+  // ── FACIAL THIRDS ────────────────────────────────────
+  // y increases downward in MediaPipe
   const bY=(p(LM.leftBrowInner).y+p(LM.rightBrowInner).y)/2;
   const nY=p(LM.noseTip).y;
   const cY=p(LM.chin).y;
   const tY=p(LM.foreheadTop).y;
-  // Note: y increases downward (0=top, 1=bottom), so all heights are positive
-  const t1=Math.abs(bY-tY), t2=Math.abs(nY-bY), t3=Math.abs(cY-nY), tot=t1+t2+t3, id=tot/3;
+  const t1=bY-tY, t2=nY-bY, t3=cY-nY;
+  const tot=t1+t2+t3, id=tot/3;
+  // thirdsDev: 0=perfect, ~0.15=normal, 0.3+=unbalanced
   const thirdsDev=(Math.abs(t1-id)+Math.abs(t2-id)+Math.abs(t3-id))/tot;
-  const thirds=clamp(100-thirdsDev*180,35,96);
+  // 0→100, 0.1→82, 0.15→73, 0.2→64, 0.3→46
+  const thirds=clamp(Math.round(100-thirdsDev*260),35,96);
 
-  const noseW=D(p(LM.noseLeft),p(LM.noseRight));
-  const ieW=D(p(LM.leftEyeInner),p(LM.rightEyeInner));
-  const nose=clamp(100-Math.abs(noseW/ieW-1.15)*100,30,96);
+  // ── NOSE ─────────────────────────────────────────────
+  // noseW/ieW: normal ~0.8-1.4, ideal ~1.0-1.2
+  const noseW=D2(p(LM.noseLeft),p(LM.noseRight));
+  const ieW=D2(p(LM.leftEyeInner),p(LM.rightEyeInner));
+  const nRatio=noseW/ieW;
+  // 0.8→76, 1.0→100, 1.2→100, 1.5→64
+  const nose=clamp(Math.round(100-Math.pow(nRatio-1.1,2)*350),30,96);
 
-  const upH=D(p(LM.lipTop),p(LM.lipUpperMid));
-  const loH=D(p(LM.lipBot),p(LM.lipLowerMid));
-  const lips=clamp(100-Math.abs(upH/(loH+0.0001)-0.6)*240,15,92);
+  // ── LIPS ─────────────────────────────────────────────
+  // Upper/lower lip ratio: ideal ~0.5-0.7 (lower lip slightly fuller)
+  const upH=D2(p(LM.lipTop),p(LM.lipUpperMid));
+  const loH=D2(p(LM.lipBot),p(LM.lipLowerMid));
+  const lipRatio=upH/(loH+0.0001);
+  // 0.4→76, 0.6→100, 0.8→76, 1.0→52
+  const lips=clamp(Math.round(100-Math.pow(lipRatio-0.6,2)*600),20,94);
 
+  // ── FINAL SCORE ──────────────────────────────────────
   const w=jaw*0.21+sym*0.18+cScore*0.17+chk*0.14+eye*0.12+thirds*0.10+nose*0.05+lips*0.03;
-  // Scale weights to 0-10. 0.077*avg=6.16 at benchmark(80), +1.3=7.5. 
-  // With all metrics at 80 (solid attractiveness) -> 7.5. With metrics at 60 -> ~6.0. With metrics at 45 -> ~5.0.
-  const score=parseFloat(clamp(w*0.077+1.4,2.0,9.7).toFixed(1));
+  // w ranges ~20-95. Map to 1-10 scale.
+  // w=45→~4.8, w=55→~5.7, w=65→~6.6, w=75→~7.5, w=85→~8.4
+  const score=parseFloat(clamp(w*0.078+1.3,2.0,9.7).toFixed(1));
 
   return{score,
     metrics:{jawline:Math.round(jaw),symmetry:Math.round(sym),canthal_tilt:cLabel,

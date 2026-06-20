@@ -435,12 +435,28 @@ function computeMetrics(lm){
   const w=jaw*0.21+sym*0.18+cScore*0.17+chk*0.14+eye*0.12+thirds*0.10+nose*0.05+lips*0.03;
   const score=parseFloat(clamp(w*0.084+1.1,2.0,9.7).toFixed(1));
 
+  // ── DEBUG raw values ────────────────────────────────
+  const _dbg=[];
+  _dbg.push('eyeAngle: '+(eyeAngle*180/Math.PI).toFixed(1)+'°');
+  _dbg.push('faceW: '+faceW.toFixed(4)+' faceH: '+faceH.toFixed(4)+' fRatio: '+fRatio.toFixed(3));
+  _dbg.push('symAvg: '+(symAvg*100).toFixed(2)+'%');
+  _dbg.push('tR: '+tR.toFixed(4));
+  _dbg.push('eR: '+eR.toFixed(3));
+  _dbg.push('cRatio: '+cRatio.toFixed(3));
+  _dbg.push('thirdsDev: '+thirdsDev.toFixed(3));
+  _dbg.push('nRatio: '+nRatio.toFixed(3));
+  _dbg.push('lipRatio: '+lipRatio.toFixed(3));
+  _dbg.push('---SCORES---');
+  _dbg.push('jaw: '+jaw+' sym: '+sym+' canthal: '+cScore+' chk: '+chk);
+  _dbg.push('eye: '+eye+' thirds: '+thirds+' nose: '+nose+' lips: '+lips);
+  _dbg.push('weighted w: '+w.toFixed(1)+' → score: '+score);
+
   return{score,
     metrics:{jawline:Math.round(jaw),symmetry:Math.round(sym),canthal_tilt:cLabel,
       cheekbones:Math.round(chk),eye_region:Math.round(eye),facial_thirds:Math.round(thirds),
       nose:Math.round(nose),lips:Math.round(lips)},
     raw:{jaw,sym,cScore,chk,eye,thirds,nose,lips},
-    lm
+    lm,debug:_dbg
   };
 }
 
@@ -749,6 +765,18 @@ function renderResults(result,verdict,tips){
     document.querySelectorAll('.mf').forEach(el=>el.style.width=el.dataset.p+'%');
     $('pf').style.width=Math.min(pot/3*100,100)+'%';
   },300);
+
+  // Debug output
+  if(result.debug){
+    let dbgEl=$('dbg-out');
+    if(!dbgEl){
+      dbgEl=document.createElement('div');
+      dbgEl.id='dbg-out';
+      dbgEl.style.cssText='font-size:.55rem;color:#333;margin-top:12px;padding:8px 12px;border:1px solid #1a1a1a;background:#0a0a0a;white-space:pre-line;line-height:1.8;font-family:monospace;';
+      $('vt').parentNode.appendChild(dbgEl);
+    }
+    dbgEl.textContent=result.debug.join('\n');
+  }
 
   $('res-sec').scrollIntoView({behavior:'smooth',block:'start'});
 }

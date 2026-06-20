@@ -264,10 +264,13 @@ function computeMetrics(lm){
   const faceW=D(rp(LM.jawLeft),rp(LM.jawRight));
   const faceH=D(rp(LM.foreheadTop),rp(LM.chin));
 
-  // JAWLINE: faceH/faceW ratio. Ideal ~1.15. Penalize both round and long faces.
-  // 0.8→55, 0.9→72, 1.0→85, 1.05→89, 1.15→96, 1.3→88, 1.5→72, 1.8→52
+  // JAWLINE: faceH/faceW ratio. Ideal 1.1-1.3 (oval face).
+  // Round faces (<0.95) score low. Very long faces (>1.5) also penalized.
+  // 0.8→40, 0.9→60, 1.0→90, 1.05→92, 1.15→96, 1.3→90, 1.5→80
   const fRatio=faceH/faceW;
-  const jaw=clamp(Math.round(96-Math.abs(fRatio-1.15)*40-Math.pow(fRatio-1.15,2)*120),20,96);
+  let jaw;
+  if(fRatio<1.0){jaw=clamp(Math.round(50+(fRatio-0.85)*200),20,96);}
+  else{jaw=clamp(Math.round(96-Math.abs(fRatio-1.15)*40-Math.max(0,fRatio-1.3)**2*50),20,96);}
 
   // SYMMETRY: measure both x and y asymmetry between paired points
   // After rotation, left/right points should have:
@@ -323,9 +326,9 @@ function computeMetrics(lm){
   const noseW=D(rp(LM.noseLeft),rp(LM.noseRight));
   const ieW=D(rp(LM.leftEyeInner),rp(LM.rightEyeInner));
   const nRatio=noseW/ieW;
-  // NOSE: noseW/ieW. Ideal ~0.85 (narrow to medium-narrow).
-  // 0.4→30, 0.6→55, 0.7→80, 0.85→96, 1.0→91, 1.3→30
-  const nose=clamp(Math.round(100-Math.pow(nRatio-0.85,2)*400),30,96);
+  // NOSE: noseW/ieW. Ideal ~0.65 (narrow). Penalize both very narrow and wide.
+  // 0.4→61, 0.5→81, 0.587→94, 0.65→100, 0.8→76, 1.0→35, 1.2→30
+  const nose=clamp(Math.round(100-Math.abs(nRatio-0.65)*80-Math.pow(nRatio-0.65,2)*300),30,96);
 
   // LIPS
   const upH=D(rp(LM.lipTop),rp(LM.lipUpperMid));

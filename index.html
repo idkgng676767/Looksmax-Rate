@@ -302,6 +302,8 @@ function computeMetrics(lm){
 
   // CHEEKBONES: cheekW/jawW. Higher = wider cheekbones (good). Ideal 1.0-1.3
   // 0.8→40, 0.9→55, 1.0→70, 1.1→85, 1.2→94, 1.3→94
+  const cheekW=D(rp(LM.cheekLeft),rp(LM.cheekRight));
+  const jawW=D(rp(LM.jawMidLeft),rp(LM.jawMidRight));
   const cRatio=cheekW/jawW;
   const chk=clamp(Math.round(15+(cRatio-0.8)*100),15,94);
 

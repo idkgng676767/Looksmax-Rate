@@ -269,23 +269,23 @@ function computeMetrics(lm){
   const fRatio=faceH/faceW;
   const jaw=clamp(Math.round(96-Math.abs(fRatio-1.15)*40-Math.pow(fRatio-1.15,2)*120),20,96);
 
-  // SYMMETRY: compare left/right point distances to each other
-  // For each pair, the left and right points should be roughly equidistant from center
-  // Use a simpler approach: measure relative position difference
+  // SYMMETRY: measure both x and y asymmetry between paired points
+  // After rotation, left/right points should have:
+  // - Similar y-values (same height) → small |a.y - b.y|
+  // - Similar distance from center → small ||a.x - center| - |b.x - center||
   const pairs=[[LM.leftEyeOuter,LM.rightEyeOuter],[LM.leftEyeInner,LM.rightEyeInner],[LM.leftBrowOuter,LM.rightBrowOuter],[LM.leftBrowInner,LM.rightBrowInner],[LM.noseLeft,LM.noseRight],[LM.lipLeft,LM.lipRight],[LM.jawLeft,LM.jawRight],[LM.cheekLeft,LM.cheekRight]];
   let symTotal=0;
   for(const[l,r]of pairs){
     const a=rp(l),b=rp(r);
-    // Compare: how far is each point from the face center (midpoint of pair)?
-    // Ideal: both points are same distance from center
-    const midX=(a.x+b.x)/2;
-    const dev=Math.abs(a.x-midX)+Math.abs(b.x-midX);
-    // Actually just measure the x-distance between the two points relative to faceW
-    // and compare to expected. Simpler: just use y-axis symmetry score
-    symTotal+=Math.abs(a.y-b.y); // y-distance between paired points (should be ~0 after rotation)
+    // Y asymmetry: vertical misalignment
+    const yDiff=Math.abs(a.y-b.y);
+    // X asymmetry: different distances from face center
+    // Use the midpoint of all pairs as center estimate
+    const xDiff=Math.abs(Math.abs(a.x-0.5)-Math.abs(b.x-0.5));
+    symTotal+=yDiff+xDiff;
   }
   const symAvg=symTotal/pairs.length;
-  // symAvg after rotation: ~0.005-0.03 for normal faces
+  // symAvg: 0=perfect, ~0.005-0.02=normal, 0.05+=asymmetric
   // 0→100, 0.01→90, 0.02→80, 0.04→60, 0.06→40
   const sym=clamp(Math.round(100-symAvg*2000),30,98);
 

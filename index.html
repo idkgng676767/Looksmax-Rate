@@ -268,15 +268,25 @@ function computeMetrics(lm){
   const fRatio=faceH/faceW;
   const jaw=clamp(Math.round(100-Math.abs(fRatio-1.35)*80),20,96);
 
-  // SYMMETRY: mirror left points across nose-bridge axis
-  const nb=rp(LM.noseBridge);
+  // SYMMETRY: compare left/right point distances to each other
+  // For each pair, the left and right points should be roughly equidistant from center
+  // Use a simpler approach: measure relative position difference
   const pairs=[[LM.leftEyeOuter,LM.rightEyeOuter],[LM.leftEyeInner,LM.rightEyeInner],[LM.leftBrowOuter,LM.rightBrowOuter],[LM.leftBrowInner,LM.rightBrowInner],[LM.noseLeft,LM.noseRight],[LM.lipLeft,LM.lipRight],[LM.jawLeft,LM.jawRight],[LM.cheekLeft,LM.cheekRight]];
   let symTotal=0;
-  for(const[l,r]of pairs){const a=rp(l),b=rp(r);symTotal+=Math.abs(b.x-(2*nb.x-a.x));}
-  const symNorm=(symTotal/pairs.length)/faceW;
-  // symNorm: 0=perfect. Normal faces ~0.02-0.06 after rotation.
-  // Very gentle: 0→100, 0.03→88, 0.06→76, 0.1→58, 0.15→35
-  const sym=clamp(Math.round(100-symNorm*400),30,98);
+  for(const[l,r]of pairs){
+    const a=rp(l),b=rp(r);
+    // Compare: how far is each point from the face center (midpoint of pair)?
+    // Ideal: both points are same distance from center
+    const midX=(a.x+b.x)/2;
+    const dev=Math.abs(a.x-midX)+Math.abs(b.x-midX);
+    // Actually just measure the x-distance between the two points relative to faceW
+    // and compare to expected. Simpler: just use y-axis symmetry score
+    symTotal+=Math.abs(a.y-b.y); // y-distance between paired points (should be ~0 after rotation)
+  }
+  const symAvg=symTotal/pairs.length;
+  // symAvg after rotation: ~0.005-0.03 for normal faces
+  // 0→100, 0.01→90, 0.02→80, 0.04→60, 0.06→40
+  const sym=clamp(Math.round(100-symAvg*2000),30,98);
 
   // CANTHAL TILT
   const lO=rp(LM.leftEyeOuter),lI=rp(LM.leftEyeInner);
@@ -326,8 +336,8 @@ function computeMetrics(lm){
   console.log('=== FACE DEBUG ===');
   console.log('eyeAngle:',(eyeAngle*180/Math.PI).toFixed(1),'deg');
   console.log('faceW:',faceW.toFixed(4),'faceH:',faceH.toFixed(4),'fRatio:',fRatio.toFixed(3));
-  console.log('symNorm:',(symNorm*100).toFixed(2)+'%');
-  console.log('tR:',tR.toFixed(4),'eR:',eR.toFixed(3),'cRatio:',cRatio.toFixed(3));
+  console.log('symAvg:',(symAvg*100).toFixed(2)+'%');
+  console.log('tR:',tR.toFixed(4),'eR:',eR.toFixed(3),'cRatio:',(cheekW/jawW).toFixed(3));
   console.log('thirdsDev:',thirdsDev.toFixed(3),'nRatio:',nRatio.toFixed(3),'lipRatio:',lipRatio.toFixed(3));
   console.log('SCORES: jaw:',jaw,'sym:',sym,'canthal:',cScore,'chk:',chk,'eye:',eye,'thirds:',thirds,'nose:',nose,'lips:',lips);
   console.log('w:',w.toFixed(1),'score:',score);

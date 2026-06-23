@@ -285,9 +285,9 @@ function computeMetrics(lm){
     symRot+=Math.abs(ar.y-br.y);
     symRaw+=Math.abs(ao.y-bo.y)+Math.abs(ao.x-bo.x)*0.5;
   }
-  const faceW=D(p(LM.jawLeft),p(LM.jawRight));
-  const symScoreRaw=max(30,min(98,round(100-(symRaw/pairs.length)/faceW*300)));
-  const symScoreRot=max(30,min(98,round(100-(symRot/pairs.length)/faceH*200)));
+  const faceW_orig=D(p(LM.jawLeft),p(LM.jawRight));
+  const symScoreRaw=clamp(Math.round(100-(symRaw/pairs.length)/faceW_orig*300),30,98);
+  const symScoreRot=clamp(Math.round(100-(symRot/pairs.length)/faceH*200),30,98);
   const sym=Math.round(symScoreRaw*0.5+symScoreRot*0.5); // blend both
 
   // CANTHAL TILT
@@ -342,7 +342,7 @@ function computeMetrics(lm){
   console.log('=== FACE DEBUG ===');
   console.log('eyeAngle:',(eyeAngle*180/Math.PI).toFixed(1),'deg');
   console.log('faceW:',faceW.toFixed(4),'faceH:',faceH.toFixed(4),'fRatio:',fRatio.toFixed(3));
-  console.log('symAvg:',(symAvg*100).toFixed(2)+'%');
+  console.log('symScoreRaw:',symScoreRaw,'symScoreRot:',symScoreRot,'sym:',sym);
   console.log('tR:',tR.toFixed(4),'eR:',eR.toFixed(3),'cRatio:',cRatio.toFixed(3));
   console.log('thirdsDev:',thirdsDev.toFixed(3),'nRatio:',nRatio.toFixed(3),'lipRatio:',lipRatio.toFixed(3));
   console.log('SCORES: jaw:',jaw,'sym:',sym,'canthal:',cScore,'chk:',chk,'eye:',eye,'thirds:',thirds,'nose:',nose,'lips:',lips);
